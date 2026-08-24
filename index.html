@@ -3,6 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+  // 카카오톡 인앱 브라우저 감지 시 외부 브라우저(크롬/사파리)로 자동 전환
+  (function () {
+    var ua = navigator.userAgent.toLowerCase();
+    if (ua.indexOf('kakaotalk') === -1) return;
+    var currentUrl = location.href;
+    if (/iphone|ipad|ipod/i.test(ua)) {
+      location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(currentUrl);
+    } else {
+      location.href = 'intent://' + currentUrl.replace(/^https?:\/\//i, '') + '#Intent;scheme=https;package=com.android.chrome;end;';
+    }
+  })();
+</script>
 <title>서애순 | IBK기업은행 상록수지점장</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -83,14 +96,14 @@
 
   <header class="topbar sticky top-0 z-50 glass-header border-b border-slate-200/80">
     <div class="max-w-6xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between">
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2 sm:gap-3 min-w-0">
 <img src="data:image/png;base64,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" alt="IBK기업은행 CI" class="w-8 h-8 flex-shrink-0" />
-        <span class="font-extrabold tracking-tight text-base sm:text-lg" style="color:#152C70;">
+        <span class="hidden sm:inline font-extrabold tracking-tight text-base sm:text-lg" style="color:#152C70;">
           IBK<span class="font-semibold">기업은행</span>
         </span>
         <span class="hidden sm:inline text-slate-300">|</span>
-        <span class="font-bold text-slate-900 tracking-tight text-base sm:text-lg">
-          서애순 <span class="text-xs sm:text-sm font-medium text-slate-500 ml-1">· 상록수지점장</span>
+        <span class="font-bold text-slate-900 tracking-tight text-sm sm:text-lg truncate">
+          서애순 <span class="hidden sm:inline text-xs sm:text-sm font-medium text-slate-500 ml-1">· 상록수지점장</span>
         </span>
       </div>
       <nav class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
@@ -117,7 +130,7 @@
             IBK기업은행 상록수지점장
           </div>
 
-          <h1 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-white leading-snug lg:leading-tight">
+          <h1 class="text-lg sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-white leading-snug lg:leading-tight">
             복잡한 여신, 가장 잘 아는 사람에게<br>
             <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-sky-300 to-cyan-200">대표님의 금융 설계를 맡기세요</span>
           </h1>
@@ -391,7 +404,7 @@
             <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 text-xs font-mono">
               NETWORK
             </div>
-            <h2 class="text-2xl sm:text-3xl font-bold tracking-tight">본점 네트워크와 바로 연결합니다</h2>
+            <h2 class="text-xl sm:text-3xl font-bold tracking-tight">본점 네트워크와<br class="sm:hidden"> 바로 연결합니다</h2>
             <p class="text-slate-300 text-xs sm:text-sm leading-relaxed max-w-2xl">
               여신, IT금융, 디지털 지원 부서를 두루 거친 경험을 바탕으로, 상록수지점 상담만으로 해결되지 않는 부분은 본점 전문 부서와 연결해드립니다.
             </p>
