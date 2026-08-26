@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>비가격서비스 안내 | IBK기업은행 상록수지점</title>
+<title>비금융서비스 안내 | IBK기업은행 상록수지점</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
@@ -185,15 +185,30 @@
   /* ---------- Footer ---------- */
   footer{
     background:#fff; border-top:1px solid var(--line);
-    padding:28px 20px 44px;
+    padding:24px 20px 30px;
   }
-  .footer-inner{max-width:1040px; margin:0 auto; font-size:12.5px; color:var(--ink-soft);}
-  .footer-inner p{margin:0 0 6px;}
+  .footer-inner{
+    max-width:1040px; margin:0 auto; font-size:12.5px; color:var(--ink-soft);
+  }
+  .footer-top{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    padding-bottom:14px; margin-bottom:14px; border-bottom:1px solid var(--line);
+  }
+  .footer-inner p{margin:0;}
   .footer-inner a{color:var(--brand); text-decoration:underline;}
+  .footer-ci{display:flex; align-items:center; gap:9px;}
+  .footer-ci img{width:28px; height:28px; display:block;}
+  .footer-ci .name{font-weight:800; color:var(--ink-strong); font-size:14px; letter-spacing:-.01em;}
   .footer-brand{
     font-weight:800; color:var(--ink-strong);
-    font-size:14px; margin-bottom:10px; letter-spacing:-.01em;
+    font-size:14px; letter-spacing:-.01em;
   }
+  .footer-contact{
+    display:flex; flex-wrap:wrap; gap:8px 20px;
+    font-family:'JetBrains Mono',monospace; font-size:11.5px;
+  }
+  .footer-contact span{white-space:nowrap;}
+  .footer-contact b{color:var(--ink); font-weight:700; margin-right:4px;}
 </style>
 </head>
 <body>
@@ -201,12 +216,12 @@
 <header class="hero">
   <div class="hero-inner">
     <p class="eyebrow-badge"><span class="dot"></span>IBK기업은행 상록수지점 · 기업고객 참고자료</p>
-    <h1>비가격서비스 <span class="grad">안내</span></h1>
-    <p class="lead">금리·한도를 넘어선 관계 — IBK기업은행이 기업고객의 성장 단계마다 제공하는 비금융(비가격) 서비스를 체계적으로 정리했습니다.</p>
+    <h1>비금융서비스 <span class="grad">안내</span></h1>
+    <p class="lead">금리·한도를 넘어선 관계 — IBK기업은행이 기업고객의 성장 단계마다 제공하는 비금융 서비스를 체계적으로 정리했습니다.</p>
     <div class="meta-row">
       <span>기준일 <b>2026.7.27.</b></span>
       <span>서비스 <b id="metaCount">27</b>건</span>
-      <span>카테고리 <b>6</b>개</span>
+      <span>카테고리 <b>5</b>개</span>
     </div>
   </div>
 </header>
@@ -225,43 +240,25 @@
 
 <footer>
   <div class="footer-inner">
-    <p class="footer-brand">IBK기업은행 상록수지점</p>
-    <p>출처: 2026년 하반기 기업금융 지원 종합가이드 – 「비금융서비스 안내」(2026.7.27. 기준), IBK기업은행 기업고객부. 원본 자료(Google Drive) →
-      <a href="https://drive.google.com/file/d/1D7EHxBGLc035AMVPBjOGGzgFNdtHCJN-/view" target="_blank" rel="noopener">보기</a>
-    </p>
-    <p>담당부서는 원본 자료 기준이며, 조직 개편 등으로 변경될 수 있습니다. 서비스 이용을 원하시면 해당 부서 또는 상록수지점으로 문의해 주세요.</p>
-    <p>📎 표시는 Google Drive 「비가격서비스」 폴더에 있는 실제 리플릿·안내장·가이드 파일로 연결됩니다. 클릭하면 해당 파일이 새 탭에서 열립니다(같은 Google 계정으로 로그인되어 있어야 합니다).</p>
+    <div class="footer-top">
+      <div class="footer-ci">
+        <img src="data:image/png;base64,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" alt="IBK기업은행 CI">
+        <span class="name">IBK기업은행</span>
+      </div>
+      <p class="footer-brand">상록수지점</p>
+    </div>
+    <div class="footer-contact">
+      <span><b>주소</b>15537 경기도 안산시 상록구 본삼로 49 (본오동)</span>
+      <span><b>상담시간</b>평일 09:00–16:00 (사전 예약 시 협의 가능)</span>
+      <span><b>T</b>031-418-0251 (내선 200)</span>
+      <span><b>M</b>010-4788-0466</span>
+      <span><b>E</b>esoonseo@ibk.co.kr</span>
+    </div>
   </div>
 </footer>
 
 <script>
 const DATA = [
-  {
-    cat:"우량기업고객관리", desc:"신용등급·기여도가 우수한 기업, 우량 외환거래 기업을 대상으로 한 관계 강화 프로그램",
-    items:[
-      {name:"IBK강소기업", desc:"글로벌 기술력을 갖춘 기업을 발굴·선정하여 강소기업으로 도약할 수 있도록 여신·투자 지원 및 비금융서비스를 제공", dept:"기업고객부"},
-      {name:"패밀리기업", desc:"신용등급과 기여도가 우수한 여신거래 기업고객을 패밀리기업으로 선정하여 여신금리 감면 및 각종 수수료 우대 혜택 제공", dept:"기업고객부"},
-      {name:"IBK기업은행 동반자상", desc:"우수 기업 고객과의 관계 강화를 위해 매월 지역본부의 추천을 받아 선정하여 은행장 명의의 감사패 및 부상 수여", dept:"기업고객부"},
-      {name:"동반자 기업", desc:"우량 중소기업의 이탈을 방지하고 관리를 강화하기 위해 각종 비금융서비스 및 마케팅지원펀드 우선 대상 선정 등의 우대 제공", dept:"기업고객부"},
-      {name:"IBK 3대 클럽(최고·여성·미래)", desc:"우리나라를 대표하는 우량기업을 경영하고, 덕망과 품위를 갖춘 CEO를 모집하여 세미나, 사회공헌사업 등의 서비스를 제공", dept:"CEO클럽지원부", attachments:[{label:"브로슈어", url:"https://drive.google.com/file/d/1LRL5eTwHqYuE0OUzQyGsCPht_Wx-a63S/view"}]},
-      {name:"IBK 베스트파트너", desc:"매월 외환 우량 기업을 선정하여 은행장 명의의 선정패와 기념품을 수여하고, 환가료 우대 및 해외물류비 할인 등 우대사항 제공", dept:"외환사업부"},
-    ]
-  },
-  {
-    cat:"판로개척", desc:"언론·홈쇼핑·유통 채널을 활용한 중소기업 제품 홍보 및 입점 지원",
-    items:[
-      {name:"한국경제신문 「으뜸중기제품」", desc:"기술력과 독창성이 뛰어난 중소기업 우수 제품을 선정하고, 매월 한국경제신문에 홍보하여 판로개척을 지원", dept:"기업고객부"},
-      {name:"홈앤쇼핑 「기업 홍보영상」", desc:"홈앤쇼핑 방송을 통해 제품의 홍보영상을 소개", dept:"기업고객부"},
-      {name:"중소기업 명품마루", desc:"코레일 유통 주관으로 중소기업의 판로개척을 위해 코레일 역사 내 제품 입점을 원하는 기업을 추천하여 선정", dept:"기업고객부"},
-    ]
-  },
-  {
-    cat:"지식정보", desc:"환율·상권 등 경영 의사결정에 필요한 분석·정보 제공",
-    items:[
-      {name:"IBK 환율시황 서비스", desc:"일중 환율 변화에 신속히 대응할 수 있도록 매일의 환율시황을 이메일, 알림톡을 통해 제공", dept:"자금운용부"},
-      {name:"IBK 알파상권분석", desc:"경기동향, 상권분석 등 사업운영 전략에 활용 가능한 분석결과를 제공", dept:"기업디지털사업부"},
-    ]
-  },
   {
     cat:"컨설팅 & 서비스", desc:"부동산·M&A·세무·ESG·외환·자산관리·퇴직연금 등 전문 컨설팅 및 실무 지원",
     items:[
@@ -277,6 +274,21 @@ const DATA = [
       {name:"WIN CLASS 서비스패키지", desc:"총수신 및 영업이익 우수 자산관리고객을 대상으로 충성도를 높이고 거래 전속화를 유도하기 위하여 제공하는 차별화된 서비스", dept:"자산관리사업부"},
       {name:"퇴직연금 자산관리컨설팅", desc:"퇴직연금 가입 기업고객에게 자산관리컨설팅, 자산관리교육 제공 및 고액 VIP 전담 관리", dept:"연금지원부"},
       {name:"퇴직연금 설명회", desc:"퇴직연금 신규 도입에 따른 제도설명, 가입자 교육, 서류수취, 적립금 유치를 위한 타행 계약이전 지원 등 영업점 마케팅 활동을 지원하는 제도", dept:"연금지원부"},
+    ]
+  },
+  {
+    cat:"판로개척", desc:"언론·홈쇼핑·유통 채널을 활용한 중소기업 제품 홍보 및 입점 지원",
+    items:[
+      {name:"한국경제신문 「으뜸중기제품」", desc:"기술력과 독창성이 뛰어난 중소기업 우수 제품을 선정하고, 매월 한국경제신문에 홍보하여 판로개척을 지원", dept:"기업고객부"},
+      {name:"홈앤쇼핑 「기업 홍보영상」", desc:"홈앤쇼핑 방송을 통해 제품의 홍보영상을 소개", dept:"기업고객부"},
+      {name:"중소기업 명품마루", desc:"코레일 유통 주관으로 중소기업의 판로개척을 위해 코레일 역사 내 제품 입점을 원하는 기업을 추천하여 선정", dept:"기업고객부"},
+    ]
+  },
+  {
+    cat:"지식정보", desc:"환율·상권 등 경영 의사결정에 필요한 분석·정보 제공",
+    items:[
+      {name:"IBK 환율시황 서비스", desc:"일중 환율 변화에 신속히 대응할 수 있도록 매일의 환율시황을 이메일, 알림톡을 통해 제공", dept:"자금운용부"},
+      {name:"IBK 알파상권분석", desc:"경기동향, 상권분석 등 사업운영 전략에 활용 가능한 분석결과를 제공", dept:"기업디지털사업부"},
     ]
   },
   {
@@ -296,19 +308,17 @@ const DATA = [
 ];
 
 const CAT_COLORS = {
-  "우량기업고객관리": "#2563EB",
+  "컨설팅 & 서비스": "#D97706",
   "판로개척": "#0891B2",
   "지식정보": "#7C3AED",
-  "컨설팅 & 서비스": "#D97706",
   "구인": "#059669",
   "기타": "#E11D48",
 };
 
 const CAT_EYEBROW = {
-  "우량기업고객관리": "KEY CLIENT MANAGEMENT",
+  "컨설팅 & 서비스": "ADVISORY & SERVICES",
   "판로개척": "MARKET ACCESS",
   "지식정보": "MARKET INTELLIGENCE",
-  "컨설팅 & 서비스": "ADVISORY & SERVICES",
   "구인": "TALENT & HIRING",
   "기타": "EMPLOYEE WELFARE",
 };
