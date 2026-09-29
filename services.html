@@ -254,7 +254,7 @@
 
 <header class="hero">
   <div class="hero-inner">
-    <p class="eyebrow-badge"><span class="dot"></span>IBK기업은행 상록수지점 · 기업고객 참고자료</p>
+    <p class="eyebrow-badge"><span class="dot"></span><span id="eyebrowText">IBK기업은행 상록수지점 · 기업고객 참고자료</span></p>
     <h1>비금융서비스 <span class="grad">안내</span></h1>
     <p class="lead">금리·한도를 넘어선 관계 — IBK기업은행이 기업고객의 성장 단계마다 제공하는 비금융 서비스를 체계적으로 정리했습니다.</p>
     <div class="meta-row">
@@ -280,29 +280,29 @@
 <section class="location-section">
   <div class="location-inner">
     <p class="loc-eyebrow">LOCATION &amp; CONTACT</p>
-    <h2 class="loc-title">상록수지점에서 뵙겠습니다</h2>
-    <p class="loc-sub">IBK기업은행 상록수지점으로 방문해주시면 정성껏 안내해 드리겠습니다.</p>
+    <h2 class="loc-title" id="locTitle">상록수지점에서 뵙겠습니다</h2>
+    <p class="loc-sub" id="locSub">IBK기업은행 상록수지점으로 방문해주시면 정성껏 안내해 드리겠습니다.</p>
     <div class="loc-grid">
       <div class="loc-card">
         <div class="loc-icon">📍</div>
         <p class="loc-label">LOCATION</p>
         <p class="loc-heading">지점 주소</p>
-        <p class="loc-text">15537 경기도 안산시 상록구 본삼로 49 (본오동)</p>
-        <a class="loc-link" href="https://map.naver.com/p/search/IBK%EA%B8%B0%EC%97%85%EC%9D%80%ED%96%89%20%EC%83%81%EB%A1%9D%EC%88%98%EC%A7%80%EC%A0%90" target="_blank" rel="noopener">지도에서 보기 →</a>
+        <p class="loc-text" id="locAddress">15537 경기도 안산시 상록구 본삼로 49 (본오동)</p>
+        <a class="loc-link" id="locMapLink" href="https://map.naver.com/p/search/IBK%EA%B8%B0%EC%97%85%EC%9D%80%ED%96%89%20%EC%83%81%EB%A1%9D%EC%88%98%EC%A7%80%EC%A0%90" target="_blank" rel="noopener">지도에서 보기 →</a>
       </div>
       <div class="loc-card">
         <div class="loc-icon">🕐</div>
         <p class="loc-label">HOURS</p>
         <p class="loc-heading">상담 시간</p>
-        <p class="loc-text">평일 09:00–16:00, 사전 예약 시 협의 가능</p>
+        <p class="loc-text" id="locHours">평일 09:00–16:00, 사전 예약 시 협의 가능</p>
       </div>
       <div class="loc-card">
         <div class="loc-icon">📞</div>
         <p class="loc-label">CONTACT</p>
         <p class="loc-heading">연락처</p>
-        <p class="loc-contact-row"><b>T</b> 031-418-0251 (내선 200)</p>
-        <p class="loc-contact-row"><b>M</b> 010-4788-0466</p>
-        <p class="loc-contact-row"><b>E</b> esoonseo@ibk.co.kr</p>
+        <p class="loc-contact-row" id="contactTelRow"><b>T</b> <span id="contactTel">031-418-0251 (내선 200)</span></p>
+        <p class="loc-contact-row" id="contactMobileRow"><b>M</b> <span id="contactMobile">010-4788-0466</span></p>
+        <p class="loc-contact-row" id="contactEmailRow"><b>E</b> <span id="contactEmail">esoonseo@ibk.co.kr</span></p>
       </div>
     </div>
   </div>
@@ -310,9 +310,9 @@
 
 <footer>
   <div class="footer-inner">
-    <p class="footer-disclaimer">본 페이지는 IBK기업은행 상록수지점의 비금융서비스 안내를 목적으로 제작되었으며, 게재된 서비스 내용은 실제 상품 및 정책자금 조건에 따라 다를 수 있습니다. 정확한 상담은 지점 방문을 통해 확인해 주시기 바랍니다.</p>
+    <p class="footer-disclaimer" id="footerDisclaimer">본 페이지는 IBK기업은행 상록수지점의 비금융서비스 안내를 목적으로 제작되었으며, 게재된 서비스 내용은 실제 상품 및 정책자금 조건에 따라 다를 수 있습니다. 정확한 상담은 지점 방문을 통해 확인해 주시기 바랍니다.</p>
     <div class="footer-bottom-row">
-      <span class="footer-brand2">IBK기업은행 상록수지점 · 지점장 서애순</span>
+      <span class="footer-brand2" id="footerBrand">IBK기업은행 상록수지점 · 지점장 서애순</span>
       <span class="footer-copy">© 2026 All rights reserved.</span>
     </div>
   </div>
@@ -456,6 +456,49 @@ function render(){
 searchInput.addEventListener('input', render);
 buildChips();
 render();
+
+// ── 지점별 맞춤 정보 (URL의 ?code= 값으로 조회) ──────────────────
+const BRANCH_DEFAULT = {
+  branch_name: "상록수지점",
+  manager_name: "서애순",
+  tel: "031-418-0251 (내선 200)",
+  mobile: "010-4788-0466",
+  email: "esoonseo@ibk.co.kr",
+  address: "15537 경기도 안산시 상록구 본삼로 49 (본오동)",
+  hours: "평일 09:00–16:00, 사전 예약 시 협의 가능"
+};
+const SUPABASE_URL = "https://oqeiaaworcarixndtomj.supabase.co";
+const SUPABASE_KEY = "sb_publishable_xVY0MJETNgpC820jW4yO1w_XUd9QzqZ";
+
+function applyBranchInfo(b){
+  document.title = `비금융서비스 안내 | IBK기업은행 ${b.branch_name}`;
+  document.getElementById('eyebrowText').textContent = `IBK기업은행 ${b.branch_name} · 기업고객 참고자료`;
+  document.getElementById('locTitle').textContent = `${b.branch_name}에서 뵙겠습니다`;
+  document.getElementById('locSub').textContent = `IBK기업은행 ${b.branch_name}으로 방문해주시면 정성껏 안내해 드리겠습니다.`;
+  document.getElementById('locAddress').textContent = b.address || BRANCH_DEFAULT.address;
+  document.getElementById('locHours').textContent = b.hours || BRANCH_DEFAULT.hours;
+  document.getElementById('contactTelRow').style.display = b.tel ? '' : 'none';
+  document.getElementById('contactTel').textContent = b.tel || '';
+  document.getElementById('contactMobileRow').style.display = b.mobile ? '' : 'none';
+  document.getElementById('contactMobile').textContent = b.mobile || '';
+  document.getElementById('contactEmailRow').style.display = b.email ? '' : 'none';
+  document.getElementById('contactEmail').textContent = b.email || '';
+  const mapQuery = encodeURIComponent(`IBK기업은행 ${b.branch_name}`);
+  document.getElementById('locMapLink').href = `https://map.naver.com/p/search/${mapQuery}`;
+  document.getElementById('footerDisclaimer').textContent = `본 페이지는 IBK기업은행 ${b.branch_name}의 비금융서비스 안내를 목적으로 제작되었으며, 게재된 서비스 내용은 실제 상품 및 정책자금 조건에 따라 다를 수 있습니다. 정확한 상담은 지점 방문을 통해 확인해 주시기 바랍니다.`;
+  document.getElementById('footerBrand').textContent = `IBK기업은행 ${b.branch_name} · 지점장 ${b.manager_name}`;
+}
+
+(function loadBranchFromCode(){
+  const code = new URLSearchParams(location.search).get('code');
+  if (!code) return; // code가 없으면 기본값(상록수지점) 그대로 사용
+  fetch(`${SUPABASE_URL}/rest/v1/branch_registrations?code=eq.${encodeURIComponent(code)}&select=*`, {
+    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }
+  })
+  .then(res => res.ok ? res.json() : [])
+  .then(rows => { if (rows && rows.length) applyBranchInfo(rows[0]); })
+  .catch(() => { /* 조회 실패 시 기본값 유지 */ });
+})();
 </script>
 </body>
 </html>
