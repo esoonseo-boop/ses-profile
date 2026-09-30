@@ -241,7 +241,12 @@ async function insertBranch(payload, attempt){
     return insertBranch(payload, attempt + 1);
   }
   if (!res.ok){
-    throw new Error('등록 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.');
+    let message = '등록 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.';
+    try{
+      const body = await res.json();
+      if (body && body.message) message = body.message;
+    }catch(e){ /* 응답 본문 파싱 실패 시 기본 메시지 사용 */ }
+    throw new Error(message);
   }
   return res.json();
 }
