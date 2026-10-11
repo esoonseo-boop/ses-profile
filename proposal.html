@@ -104,7 +104,10 @@
     background-size:36px 36px;
   }
   .cover-in{position:relative; z-index:1; width:100%; max-width:560px; margin:auto;}
-  .ci{display:block; height:46px; width:auto; margin:0 0 20px;}
+  .cover-top{position:relative; z-index:1; display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; max-width:1040px; margin:0 auto 18px;}
+  .cover-top .eyebrow-badge{margin:0;}
+  .ci{display:block; height:36px; width:auto; margin:0; flex-shrink:0;}
+  @media (min-width:700px){ .ci{height:46px;} .cover-top{margin-bottom:28px;} }
   .eyebrow-badge{
     display:inline-flex; align-items:center; gap:8px; font-size:11.5px; font-weight:700; letter-spacing:.08em;
     color:#BFDBFE; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.14);
@@ -430,9 +433,11 @@ function buildCover(){
   }));
   const cta = el('button', {class:'cta', type:'button', text: V.ready ? '제안서 보기  →' : '제안서를 불러오는 중…', onclick: () => go(1)});
   cta.disabled = !V.ready;
-  coverEl = el('div', {class:'cover'}, el('div', {class:'cover-in'},
-    el('img', {class:'ci', src:'/ci.png', alt:'IBK기업은행', onerror: (e) => e.target.remove()}),
-    el('p', {class:'eyebrow-badge'}, el('span', {class:'dot'}), `${b.name}`),
+  coverEl = el('div', {class:'cover'},
+   el('div', {class:'cover-top'},
+    el('p', {class:'eyebrow-badge'}, el('span', {class:'dot'}), `기업은행 ${b.name}`),
+    el('img', {class:'ci', src:'/ci.png', alt:'IBK기업은행', onerror: (e) => e.target.remove()})),
+   el('div', {class:'cover-in'},
     el('h1', {}, el('small', {text:'맞춤 제안서'}), `${v.customer} 고객님께`),
     v.greeting ? el('p', {class:'lead', text:v.greeting}) : null,
     el('div', {class:'meta'}, meta),
