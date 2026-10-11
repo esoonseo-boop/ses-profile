@@ -93,11 +93,22 @@
   /* 표지 */
   .cover{
     position:absolute; inset:0; overflow-y:auto; color:#fff; display:flex; flex-direction:column; padding:28px 22px 24px;
+    --c-bg:#14213D; --c-g1:rgba(2,132,199,.25); --c-g2:rgba(0,98,234,.30);
+    --c-acc:#2563EB; --c-acc-d:#1D4ED8; --c-soft:#BFDBFE; --c-dot:#60A5FA;
     background:
-      radial-gradient(circle at 82% 12%, rgba(2,132,199,.25) 0%, transparent 42%),
-      radial-gradient(circle at 12% 88%, rgba(0,98,234,.30) 0%, transparent 52%),
-      var(--navy);
+      radial-gradient(circle at 82% 12%, var(--c-g1) 0%, transparent 42%),
+      radial-gradient(circle at 12% 88%, var(--c-g2) 0%, transparent 52%),
+      var(--c-bg);
+    transition:background-color .3s;
   }
+  .cover[data-theme="blue"]{--c-bg:#0A2F6B; --c-g1:rgba(56,189,248,.28); --c-g2:rgba(37,99,235,.40); --c-acc:#3B82F6; --c-acc-d:#2563EB; --c-soft:#BAE6FD; --c-dot:#38BDF8;}
+  .cover[data-theme="emerald"]{--c-bg:#0B2E2A; --c-g1:rgba(16,185,129,.25); --c-g2:rgba(5,150,105,.32); --c-acc:#059669; --c-acc-d:#047857; --c-soft:#A7F3D0; --c-dot:#34D399;}
+  .cover[data-theme="burgundy"]{--c-bg:#3B1020; --c-g1:rgba(244,63,94,.22); --c-g2:rgba(190,18,60,.32); --c-acc:#BE123C; --c-acc-d:#9F1239; --c-soft:#FECDD3; --c-dot:#FB7185;}
+  .cover[data-theme="slate"]{--c-bg:#1F2937; --c-g1:rgba(148,163,184,.20); --c-g2:rgba(71,85,105,.38); --c-acc:#475569; --c-acc-d:#334155; --c-soft:#E2E8F0; --c-dot:#94A3B8;}
+  .cover[data-theme="gold"]{--c-bg:#2A2111; --c-g1:rgba(245,158,11,.22); --c-g2:rgba(217,119,6,.30); --c-acc:#B45309; --c-acc-d:#92400E; --c-soft:#FDE68A; --c-dot:#FBBF24;}
+  .swatches{display:flex; align-items:center; gap:10px; margin-top:18px; font-size:12px; color:#94A3B8;}
+  .swatches .sw{width:26px; height:26px; border-radius:50%; cursor:pointer; padding:0; border:2px solid rgba(255,255,255,.28); box-shadow:inset 0 0 0 3px rgba(0,0,0,.18);}
+  .swatches .sw[aria-pressed="true"]{border-color:#fff; box-shadow:0 0 0 2px rgba(255,255,255,.35);}
   .cover::before{
     content:""; position:fixed; inset:0; pointer-events:none;
     background-image:linear-gradient(to right, rgba(255,255,255,.04) 1px, transparent 1px), linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px);
@@ -110,29 +121,29 @@
   @media (min-width:700px){ .ci{height:46px;} .cover-top{margin-bottom:28px;} }
   .eyebrow-badge{
     display:inline-flex; align-items:center; gap:8px; font-size:11.5px; font-weight:700; letter-spacing:.08em;
-    color:#BFDBFE; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.14);
+    color:var(--c-soft,#BFDBFE); background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.14);
     border-radius:20px; padding:6px 14px; margin:0 0 22px;
   }
-  .eyebrow-badge .dot{width:6px; height:6px; border-radius:50%; background:#60A5FA;}
+  .eyebrow-badge .dot{width:6px; height:6px; border-radius:50%; background:var(--c-dot,#60A5FA);}
   .cover h1{font-weight:800; font-size:clamp(26px,6.4vw,38px); line-height:1.25; margin:0 0 14px;}
-  .cover h1 small{display:block; font-size:.5em; font-weight:600; color:#BFDBFE; margin-bottom:8px; letter-spacing:.02em;}
+  .cover h1 small{display:block; font-size:.5em; font-weight:600; color:var(--c-soft); margin-bottom:8px; letter-spacing:.02em;}
   .cover .lead{font-size:15px; color:#CBD5E1; margin:0 0 20px;}
   .meta{display:flex; flex-wrap:wrap; gap:8px; margin:0 0 22px;}
   .chip{font-size:12.5px; font-weight:600; color:#E2E8F0; background:rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.16); border-radius:8px; padding:5px 11px;}
   .toc{list-style:none; margin:0 0 24px; padding:0; border-top:1px solid rgba(255,255,255,.14);}
   .toc li{display:flex; align-items:baseline; gap:12px; padding:11px 2px; border-bottom:1px solid rgba(255,255,255,.14); font-size:15px;}
-  .toc .n{font-family:'JetBrains Mono',monospace; font-weight:800; font-size:12.5px; color:#60A5FA;}
+  .toc .n{font-family:'JetBrains Mono',monospace; font-weight:800; font-size:12.5px; color:var(--c-dot);}
   .toc .t{flex:1; font-weight:700; color:#fff;}
   .toc .p{font-size:12.5px; color:#94A3B8;}
   .cta{
     width:100%; padding:15px; font-size:16px; font-weight:800; border:none; border-radius:12px; cursor:pointer;
-    background:var(--brand); color:#fff;
+    background:var(--c-acc); color:#fff;
   }
-  .cta:hover{background:var(--brand-dark);}
+  .cta:hover{background:var(--c-acc-d);}
   .cta:disabled{background:#475569; cursor:wait;}
   .contact{margin-top:20px; font-size:13px; color:#CBD5E1; line-height:1.6;}
   .contact b{color:#fff; font-size:14.5px;}
-  .contact a{color:#93C5FD; font-weight:700;}
+  .contact a{color:var(--c-soft); font-weight:700;}
   .cover .disc{margin-top:14px; font-size:11.5px; color:#94A3B8;}
 
   /* 목차 서랍 */
@@ -418,6 +429,19 @@ async function drawCurrent(){
   }
 }
 
+const THEMES = [['navy','네이비','#14213D'],['blue','블루','#0A2F6B'],['emerald','에메랄드','#0B2E2A'],['burgundy','버건디','#3B1020'],['slate','슬레이트','#1F2937'],['gold','골드','#2A2111']];
+function savedTheme(){ try { const t = localStorage.getItem('cover-theme'); return THEMES.some(x => x[0] === t) ? t : 'navy'; } catch (e) { return 'navy'; } }
+function swatchRow(){
+  const btns = THEMES.map(([id, label, color]) => el('button', {
+    type:'button', class:'sw', title:label, 'aria-label':`표지 색상 ${label}`, style:`background:${color}`,
+    'aria-pressed': String(id === savedTheme()),
+    onclick: (e) => {
+      coverEl.setAttribute('data-theme', id);
+      try { localStorage.setItem('cover-theme', id); } catch (err) {}
+      btns.forEach(b => b.setAttribute('aria-pressed', String(b === e.currentTarget)));
+    }}));
+  return el('div', {class:'swatches'}, el('span', {text:'표지 색상'}), btns);
+}
 function buildCover(){
   const v = V.view, b = v.branch;
   const telText = b.tel + (b.telExt ? ` (${b.telExt})` : '');
@@ -433,7 +457,7 @@ function buildCover(){
   }));
   const cta = el('button', {class:'cta', type:'button', text: V.ready ? '제안서 보기  →' : '제안서를 불러오는 중…', onclick: () => go(1)});
   cta.disabled = !V.ready;
-  coverEl = el('div', {class:'cover'},
+  coverEl = el('div', {class:'cover', 'data-theme': savedTheme()},
    el('div', {class:'cover-top'},
     el('p', {class:'eyebrow-badge'}, el('span', {class:'dot'}), `기업은행 ${b.name}`),
     el('img', {class:'ci', src:'/ci.png', alt:'IBK기업은행', onerror: (e) => e.target.remove()})),
@@ -444,6 +468,7 @@ function buildCover(){
     toc, cta,
     el('div', {class:'contact'}, el('b', {text:`${b.name} ${b.manager} 지점장`}), el('br'),
       '문의 ', el('a', {href:'tel:' + b.tel.replace(/[^0-9]/g, ''), text:telText})),
+    swatchRow(),
     el('p', {class:'disc', text:'본 자료는 상담을 위한 참고용 제안서이며, 실제 상품 조건·금리·한도는 심사 및 거래 실적에 따라 달라질 수 있습니다. 가입 전 상품설명서와 약관을 확인해 주시기 바랍니다.'})));
   return coverEl;
 }
