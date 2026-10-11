@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>제안서 관리 | IBK기업은행</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+  :root{
+    --bg:#F8FAFC; --ink:#1E293B; --ink-strong:#0F172A; --ink-soft:#64748B;
+    --brand:#2563EB; --brand-dark:#1D4ED8; --navy:#14213D; --line:#E2E8F0;
+    --card:#FFFFFF; --radius:14px; --danger:#DC2626; --ok:#16A34A;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;
+    -webkit-font-smoothing:antialiased; line-height:1.5; word-break:keep-all; overflow-wrap:anywhere;
+  }
+  .mono{font-family:'JetBrains Mono',monospace;}
+  .top{background:var(--navy); color:#fff; padding:16px 20px;}
+  .top-inner{max-width:880px; margin:0 auto; display:flex; align-items:center; gap:12px;}
+  .top h1{font-size:17px; font-weight:800; margin:0; flex:1;}
+  .top .who{font-size:12.5px; color:#CBD5E1;}
+  .wrap{max-width:880px; margin:0 auto; padding:20px;}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:20px; margin-bottom:16px;}
+  .card h2{font-size:16px; font-weight:800; margin:0 0 4px; color:var(--ink-strong);}
+  .card .desc{font-size:13px; color:var(--ink-soft); margin:0 0 16px;}
+
+  .tabs{display:flex; gap:6px; margin-bottom:16px; flex-wrap:wrap;}
+  .tab{
+    font:inherit; font-size:14px; font-weight:700; cursor:pointer;
+    padding:9px 16px; border-radius:10px; border:1.5px solid var(--line); background:#fff; color:var(--ink-soft);
+  }
+  .tab.active{background:var(--brand); border-color:var(--brand); color:#fff;}
+
+  .field{margin-bottom:14px;}
+  .field label{display:block; font-size:13px; font-weight:700; color:var(--ink-strong); margin-bottom:5px;}
+  .field label .req{color:var(--danger);} .field label .opt{color:var(--ink-soft); font-weight:500; font-size:12px;}
+  input[type=text],input[type=email],input[type=password],input[type=date],textarea,select{
+    width:100%; padding:10px 12px; font:inherit; font-size:14.5px; color:var(--ink-strong);
+    border:1.5px solid var(--line); border-radius:10px; background:#fff;
+  }
+  textarea{resize:vertical; min-height:64px;}
+  input:focus,textarea:focus{outline:none; border-color:var(--brand); box-shadow:0 0 0 3px rgba(37,99,235,.12);}
+  input[type=file]{font:inherit; font-size:13.5px;}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .row3{display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:12px;}
+  @media (max-width:560px){ .row2,.row3{grid-template-columns:1fr;} }
+  .hint{font-size:12px; color:var(--ink-soft); margin-top:4px;}
+  .inline{display:flex; align-items:center; gap:8px; font-size:13px; color:var(--ink-soft);}
+  .inline input[type=checkbox]{width:auto;}
+
+  .btn{
+    font:inherit; font-size:13.5px; font-weight:700; cursor:pointer; text-decoration:none; display:inline-block; text-align:center;
+    padding:9px 14px; border-radius:9px; border:1.5px solid var(--line); background:#fff; color:var(--ink-strong);
+  }
+  .btn:hover{border-color:var(--brand); color:var(--brand);}
+  .btn.primary{background:var(--brand); border-color:var(--brand); color:#fff;}
+  .btn.primary:hover{background:var(--brand-dark); border-color:var(--brand-dark); color:#fff;}
+  .btn.danger{color:var(--danger);} .btn.danger:hover{border-color:var(--danger); color:var(--danger);}
+  .btn.sm{padding:6px 10px; font-size:12.5px; border-radius:8px;}
+  .btn:disabled{opacity:.5; cursor:not-allowed;}
+  .btn.block{width:100%; padding:12px; font-size:15px;}
+
+  .list{display:flex; flex-direction:column; gap:10px;}
+  .rowitem{
+    display:flex; align-items:center; gap:12px; padding:12px 14px;
+    border:1px solid var(--line); border-radius:12px; background:#fff;
+  }
+  .rowitem.dim{opacity:.55;}
+  .rowitem .grow{flex:1; min-width:0;}
+  .rowitem .t{font-weight:700; color:var(--ink-strong); font-size:14.5px;}
+  .rowitem .s{font-size:12.5px; color:var(--ink-soft);}
+  .rowitem .acts{display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end;}
+  @media (max-width:560px){ .rowitem{flex-direction:column; align-items:stretch;} .rowitem .acts{justify-content:flex-start;} }
+  .badge{display:inline-block; font-size:11.5px; font-weight:700; padding:2px 8px; border-radius:20px; background:#EFF6FF; color:var(--brand); margin-right:6px;}
+  .badge.gray{background:#F1F5F9; color:var(--ink-soft);} .badge.red{background:#FEF2F2; color:var(--danger);} .badge.green{background:#F0FDF4; color:var(--ok);}
+
+  .chosen{counter-reset:n;}
+  .chosen .rowitem{align-items:flex-start;}
+  .chosen .rowitem::before{
+    counter-increment:n; content:counter(n,decimal-leading-zero);
+    font-family:'JetBrains Mono',monospace; font-weight:800; font-size:13px; color:var(--brand);
+    background:#EFF6FF; border-radius:8px; padding:3px 8px; margin-top:2px;
+  }
+  .chosen input[type=text]{margin-top:8px; font-size:13.5px; padding:8px 10px;}
+
+  .linkbox{display:flex; gap:8px; align-items:center; background:#F1F5F9; border:1.5px solid var(--line); border-radius:10px; padding:10px 12px;}
+  .linkbox input{flex:1; border:none; background:transparent; font-family:'JetBrains Mono',monospace; font-size:12.5px; padding:0;}
+  .linkbox input:focus{box-shadow:none;}
+  .empty{text-align:center; color:var(--ink-soft); font-size:13.5px; padding:24px 0;}
+
+  details{margin-bottom:14px;} summary{cursor:pointer; font-size:13px; font-weight:700; color:var(--ink-soft); margin-bottom:10px;}
+
+  .toast{
+    position:fixed; left:50%; bottom:24px; transform:translate(-50%,20px); opacity:0; pointer-events:none;
+    max-width:min(92vw,520px); padding:12px 18px; border-radius:10px; font-size:14px; font-weight:600;
+    color:#fff; background:var(--ink-strong); transition:all .2s; z-index:50;
+  }
+  .toast.show{opacity:1; transform:translate(-50%,0);}
+  .toast.err{background:var(--danger);} .toast.ok{background:var(--ok);}
+  .login{max-width:400px; margin:60px auto;}
+</style>
+</head>
+<body>
+
+<div id="app"></div>
+<div id="toast" class="toast" role="status"></div>
+
+<script>
+const SUPABASE_URL = "https://oqeiaaworcarixndtomj.supabase.co";
+const SUPABASE_KEY = "sb_publishable_xVY0MJETNgpC820jW4yO1w_XUd9QzqZ";
+const BUCKET = "proposal-pdfs";
+const PAGE_URL = "https://ses-profile.vercel.app/p";
+const PDFJS_VER = "3.11.174";
+const SESSION_KEY = "proposal_admin_session";
+const BRANCH_KEY = "proposal_admin_branch";
+const DEFAULT_BRANCH = { branch_name:"상록수지점", manager_name:"서애순", tel:"031-418-0251", tel_ext:"내선 200" };
+
+const app = document.getElementById('app');
+
+/* ---------- 유틸 ---------- */
+function el(tag, attrs, ...kids){
+  const n = document.createElement(tag);
+  for (const [k,v] of Object.entries(attrs || {})){
+    if (k === 'class') n.className = v;
+    else if (k === 'text') n.textContent = v;
+    else if (k === 'value') n.value = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else if (v === true) n.setAttribute(k, '');
+    else if (v !== false && v != null) n.setAttribute(k, v);
+  }
+  kids.flat().forEach(c => { if (c != null && c !== false) n.append(c.nodeType ? c : document.createTextNode(c)); });
+  return n;
+}
+function toast(msg, type){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast show ' + (type || 'ok');
+  clearTimeout(toast._t); toast._t = setTimeout(() => { t.className = 'toast'; }, 4000);
+}
+function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+function lsDel(k){ try{ localStorage.removeItem(k); }catch(e){} }
+function pad(n){ return String(n).padStart(2,'0'); }
+function todayStr(){ const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+function addDays(dateStr, days){ const d = new Date(dateStr + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + days); return d.toISOString().slice(0,10); }
+function fmtDT(s){ if(!s) return '없음'; const d = new Date(s); return `${d.getMonth()+1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`; }
+function genCode(){
+  const a = new Uint8Array(16); crypto.getRandomValues(a);
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  return Array.from(a, x => chars[x % 36]).join('');
+}
+function pdfUrl(path){ return `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${path}`; }
+async function copyText(t){
+  try{ await navigator.clipboard.writeText(t); }
+  catch(e){ const i = document.createElement('textarea'); i.value = t; document.body.append(i); i.select(); try{ document.execCommand('copy'); }catch(_){} i.remove(); }
+}
+function confirmButton(label, confirmLabel, onConfirm, cls){
+  let armed = false, timer;
+  const b = el('button', {class: cls || 'btn danger sm', type:'button', text:label, onclick: async () => {
+    if (!armed){ armed = true; b.textContent = confirmLabel; timer = setTimeout(() => { armed = false; b.textContent = label; }, 3000); return; }
+    clearTimeout(timer); armed = false; b.disabled = true;
+    try{ await onConfirm(); } finally { b.disabled = false; b.textContent = label; }
+  }});
+  return b;
+}
+
+/* ---------- 인증 ---------- */
+let session = null;
+try{ session = JSON.parse(lsGet(SESSION_KEY) || 'null'); }catch(e){ session = null; }
+
+function saveSession(s){
+  session = s ? { access_token:s.access_token, refresh_token:s.refresh_token,
+                  expires_at: Math.floor(Date.now()/1000) + (s.expires_in || 3600),
+                  email: (s.user && s.user.email) || (session && session.email) || '' } : null;
+  if (session) lsSet(SESSION_KEY, JSON.stringify(session)); else lsDel(SESSION_KEY);
+}
+async function authCall(grant, body){
+  return fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=${grant}`, {
+    method:'POST', headers:{ apikey:SUPABASE_KEY, 'Content-Type':'application/json' }, body: JSON.stringify(body)
+  });
+}
+async function refreshSession(){
+  if (!session || !session.refresh_token) return false;
+  try{
+    const res = await authCall('refresh_token', { refresh_token: session.refresh_token });
+    if (!res.ok){ saveSession(null); return false; }
+    saveSession(await res.json()); return true;
+  }catch(e){ return false; }
+}
+async function api(path, opts){
+  opts = opts || {};
+  if (session && session.expires_at - Math.floor(Date.now()/1000) < 60) await refreshSession();
+  const isBlob = opts.body instanceof Blob;
+  const send = () => fetch(SUPABASE_URL + path, {
+    method: opts.method || 'GET',
+    headers: Object.assign({
+      apikey: SUPABASE_KEY,
+      Authorization: 'Bearer ' + (session ? session.access_token : SUPABASE_KEY)
+    }, (opts.body && !isBlob) ? {'Content-Type':'application/json'} : {}, opts.headers || {}),
+    body: opts.body ? (isBlob ? opts.body : JSON.stringify(opts.body)) : undefined
+  });
+  let res = await send();
+  if (res.status === 401 && session && await refreshSession()) res = await send();
+  return res;
+}
+async function errMsg(res, fallback){
+  try{ const j = await res.json(); return j.message || j.error_description || j.error || fallback; }catch(e){ return fallback; }
+}
+
+/* ---------- PDF.js (페이지 수 자동 확인용) ---------- */
+let pdfjsPromise = null;
+function loadPdfJs(){
+  if (pdfjsPromise) return pdfjsPromise;
+  pdfjsPromise = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VER}/pdf.min.js`;
+    s.onload = () => { window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+      `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VER}/pdf.worker.min.js`; resolve(window.pdfjsLib); };
+    s.onerror = () => { pdfjsPromise = null; reject(new Error('pdfjs')); };
+    document.head.appendChild(s);
+  });
+  return pdfjsPromise;
+}
+async function countPages(file){
+  try{
+    const lib = await loadPdfJs();
+    const pdf = await lib.getDocument({ data: await file.arrayBuffer() }).promise;
+    return pdf.numPages;
+  }catch(e){ return null; }
+}
+async function looksLikePdf(file){
+  const head = new Uint8Array(await file.slice(0,5).arrayBuffer());
+  return String.fromCharCode(...head) === '%PDF-';
+}
+
+/* ---------- 로그인 화면 ---------- */
+function renderLogin(msg){
+  const email = el('input', {type:'email', autocomplete:'username', placeholder:'이메일', required:true});
+  const pw = el('input', {type:'password', autocomplete:'current-password', placeholder:'비밀번호', required:true});
+  const err = el('div', {class:'hint', style:'color:var(--danger);min-height:18px;', text: msg || ''});
+  const btn = el('button', {class:'btn primary block', type:'submit', text:'로그인'});
+  const form = el('form', {onsubmit: async (e) => {
+    e.preventDefault(); err.textContent = ''; btn.disabled = true; btn.textContent = '로그인 중…';
+    try{
+      const res = await authCall('password', { email: email.value.trim(), password: pw.value });
+      if (!res.ok){ err.textContent = res.status === 400 ? '이메일 또는 비밀번호가 올바르지 않습니다.' : '로그인에 실패했습니다. 잠시 후 다시 시도해 주세요.'; return; }
+      saveSession(await res.json());
+      // 관리자 허용 목록에 있는 계정인지 확인
+      const chk = await api('/rest/v1/proposal_admins?select=email');
+      const rows = chk.ok ? await chk.json() : [];
+      if (!rows.length){ saveSession(null); err.textContent = '제안서 관리 권한이 없는 계정입니다.'; return; }
+      start();
+    }catch(ex){ err.textContent = '네트워크 오류가 발생했습니다.'; }
+    finally{ btn.disabled = false; btn.textContent = '로그인'; pw.value = ''; }
+  }},
+    el('div', {class:'field'}, el('label', {text:'이메일'}), email),
+    el('div', {class:'field'}, el('label', {text:'비밀번호'}), pw),
+    err, btn);
+  app.replaceChildren(
+    el('div', {class:'top'}, el('div', {class:'top-inner'}, el('h1', {text:'제안서 관리'}))),
+    el('div', {class:'wrap'}, el('div', {class:'card login'},
+      el('h2', {text:'관리자 로그인'}),
+      el('p', {class:'desc', text:'허용된 계정만 사용할 수 있습니다.'}), form))
+  );
+}
+
+/* ---------- 메인 ---------- */
+let tab = 'create';
+const state = { products: [], chosen: [], createdLink: null };
+
+function start(){
+  if (!session){ renderLogin(); return; }
+  render();
+}
+function logout(){ saveSession(null); state.products = []; state.chosen = []; state.createdLink = null; renderLogin(); }
+
+function render(){
+  const tabs = [['create','제안서 만들기'],['list','제안서 목록'],['products','상품 라이브러리']];
+  app.replaceChildren(
+    el('div', {class:'top'}, el('div', {class:'top-inner'},
+      el('h1', {text:'제안서 관리'}),
+      el('span', {class:'who', text: session.email || ''}),
+      el('button', {class:'btn sm', type:'button', text:'로그아웃', onclick: logout}))),
+    el('div', {class:'wrap'},
+      el('div', {class:'tabs'}, tabs.map(([k,l]) => el('button', {class:'tab' + (tab===k?' active':''), type:'button', text:l, onclick: () => { tab = k; render(); }}))),
+      el('div', {id:'view'}))
+  );
+  ({create: renderCreate, list: renderList, products: renderProducts})[tab]();
+}
+
+async function loadProducts(){
+  const res = await api('/rest/v1/proposal_products?select=*&order=created_at.desc');
+  if (res.status === 401){ logout(); throw new Error('세션이 만료되었습니다. 다시 로그인해 주세요.'); }
+  if (!res.ok) throw new Error(await errMsg(res, '상품 목록을 불러오지 못했습니다.'));
+  state.products = await res.json();
+}
+
+/* ===== 상품 라이브러리 ===== */
+async function renderProducts(){
+  const view = document.getElementById('view');
+  view.replaceChildren(el('div', {class:'empty', text:'불러오는 중…'}));
+  try{ await loadProducts(); }catch(e){ view.replaceChildren(el('div', {class:'empty', text:e.message})); return; }
+
+  const title = el('input', {type:'text', maxlength:80, placeholder:'예: 운전자금 대출', required:true});
+  const category = el('input', {type:'text', maxlength:30, placeholder:'예: 여신'});
+  const summary = el('textarea', {maxlength:300, placeholder:'고객 화면 카드에 표시되는 한 줄 소개'});
+  const file = el('input', {type:'file', accept:'application/pdf,.pdf', required:true});
+  const btn = el('button', {class:'btn primary block', type:'submit', text:'상품 등록'});
+
+  const form = el('form', {onsubmit: async (e) => {
+    e.preventDefault();
+    const f = file.files[0];
+    if (!f) return;
+    if (f.size > 10 * 1024 * 1024){ toast('PDF는 10MB 이하만 올릴 수 있습니다.', 'err'); return; }
+    if (!(await looksLikePdf(f))){ toast('PDF 파일이 아닙니다.', 'err'); return; }
+    btn.disabled = true; btn.textContent = '업로드 중…';
+    const path = crypto.randomUUID() + '.pdf';
+    try{
+      const pages = await countPages(f);
+      const up = await api(`/storage/v1/object/${BUCKET}/${path}`, { method:'POST', body: f, headers:{'Content-Type':'application/pdf','x-upsert':'false'} });
+      if (!up.ok) throw new Error(await errMsg(up, 'PDF 업로드에 실패했습니다.'));
+      const ins = await api('/rest/v1/proposal_products', { method:'POST', headers:{Prefer:'return=minimal'}, body: {
+        title: title.value.trim(), category: category.value.trim() || null, summary: summary.value.trim() || null, pdf_path: path, pages } });
+      if (!ins.ok){
+        await api(`/storage/v1/object/${BUCKET}/${path}`, { method:'DELETE' });
+        throw new Error(await errMsg(ins, '상품 등록에 실패했습니다.'));
+      }
+      toast('상품을 등록했습니다.');
+      renderProducts();
+    }catch(ex){ toast(ex.message, 'err'); }
+    finally{ btn.disabled = false; btn.textContent = '상품 등록'; }
+  }},
+    el('div', {class:'row2'},
+      el('div', {class:'field'}, el('label', {}, '상품명 ', el('span', {class:'req', text:'*'})), title),
+      el('div', {class:'field'}, el('label', {}, '분류 ', el('span', {class:'opt', text:'(선택)'})), category)),
+    el('div', {class:'field'}, el('label', {}, '한 줄 소개 ', el('span', {class:'opt', text:'(선택)'})), summary),
+    el('div', {class:'field'}, el('label', {}, 'PDF 파일 ', el('span', {class:'req', text:'*'})), file,
+      el('p', {class:'hint', text:'1~2장 분량, 10MB 이하. 파일명은 저장 시 무작위로 바뀝니다.'})),
+    btn);
+
+  const list = state.products.length ? el('div', {class:'list'}, state.products.map(p =>
+    el('div', {class:'rowitem' + (p.active ? '' : ' dim')},
+      el('div', {class:'grow'},
+        el('div', {class:'t'}, p.category ? el('span', {class:'badge', text:p.category}) : null, p.title),
+        el('div', {class:'s', text: `${p.pages ? 'PDF ' + p.pages + '장 · ' : ''}${p.active ? '사용 중' : '숨김'}`})),
+      el('div', {class:'acts'},
+        el('a', {class:'btn sm', href: pdfUrl(p.pdf_path), target:'_blank', rel:'noopener', text:'PDF 보기'}),
+        el('button', {class:'btn sm', type:'button', text: p.active ? '숨김' : '다시 표시', onclick: async () => {
+          const r = await api(`/rest/v1/proposal_products?id=eq.${p.id}`, { method:'PATCH', headers:{Prefer:'return=minimal'}, body:{ active: !p.active } });
+          if (!r.ok) toast(await errMsg(r, '변경에 실패했습니다.'), 'err'); else renderProducts();
+        }}),
+        confirmButton('삭제', '정말 삭제?', async () => {
+          const r = await api(`/rest/v1/proposal_products?id=eq.${p.id}`, { method:'DELETE', headers:{Prefer:'return=minimal'} });
+          if (r.status === 409){ toast('이미 제안서에 사용 중이라 삭제할 수 없습니다. 대신 “숨김”을 사용하세요.', 'err'); return; }
+          if (!r.ok){ toast(await errMsg(r, '삭제에 실패했습니다.'), 'err'); return; }
+          await api(`/storage/v1/object/${BUCKET}/${p.pdf_path}`, { method:'DELETE' });
+          toast('삭제했습니다.'); renderProducts();
+        })))
+  )) : el('div', {class:'empty', text:'등록된 상품이 없습니다. 위에서 PDF를 올려 첫 상품을 등록하세요.'});
+
+  view.replaceChildren(
+    el('div', {class:'card'}, el('h2', {text:'새 상품 등록'}), el('p', {class:'desc', text:'상품별 제안서 PDF를 한 번만 등록해 두면, 모든 고객 제안서에서 골라 쓸 수 있습니다.'}), form),
+    el('div', {class:'card'}, el('h2', {text:`등록된 상품 ${state.products.length}개`}), el('p', {class:'desc', text:'“숨김” 처리하면 제안서 만들기 목록에서만 사라지고, 이미 만든 제안서에는 그대로 남습니다.'}), list)
+  );
+}
+
+/* ===== 제안서 만들기 ===== */
+async function renderCreate(){
+  const view = document.getElementById('view');
+  if (state.createdLink){ renderCreated(); return; }
+  view.replaceChildren(el('div', {class:'empty', text:'불러오는 중…'}));
+  try{ await loadProducts(); }catch(e){ view.replaceChildren(el('div', {class:'empty', text:e.message})); return; }
+
+  let saved = {}; try{ saved = JSON.parse(lsGet(BRANCH_KEY) || '{}'); }catch(e){}
+  const br = Object.assign({}, DEFAULT_BRANCH, saved);
+
+  const customer = el('input', {type:'text', maxlength:80, placeholder:'예: 샘플산업(주)  (업체명·약칭만, 개인정보는 넣지 마세요)', required:true});
+  const greeting = el('textarea', {maxlength:300, placeholder:'예: 평소 거래에 감사드리며, 상담 내용을 바탕으로 제안드립니다.'});
+  const expires = el('input', {type:'date', value: addDays(todayStr(), 30)});
+  const noExpiry = el('input', {type:'checkbox', onchange: () => { expires.disabled = noExpiry.checked; }});
+  const bName = el('input', {type:'text', maxlength:50, value: br.branch_name});
+  const bMgr = el('input', {type:'text', maxlength:50, value: br.manager_name});
+  const bTel = el('input', {type:'text', maxlength:30, value: br.tel});
+  const bExt = el('input', {type:'text', maxlength:30, value: br.tel_ext || ''});
+  const btn = el('button', {class:'btn primary block', type:'submit', text:'제안서 링크 만들기'});
+
+  const chosenBox = el('div', {class:'list chosen'});
+  const pickBox = el('div', {class:'list'});
+
+  function redrawChosen(){
+    chosenBox.replaceChildren(...(state.chosen.length ? state.chosen.map((c, i) =>
+      el('div', {class:'rowitem'},
+        el('div', {class:'grow'},
+          el('div', {class:'t', text:c.product.title}),
+          el('div', {class:'s', text: c.product.category || ''}),
+          el('input', {type:'text', maxlength:300, placeholder:'이 고객에게 전하는 코멘트 (선택)', value: c.note || '', oninput: (e) => { c.note = e.target.value; }})),
+        el('div', {class:'acts'},
+          el('button', {class:'btn sm', type:'button', text:'▲', disabled: i === 0, onclick: () => { [state.chosen[i-1], state.chosen[i]] = [state.chosen[i], state.chosen[i-1]]; redrawChosen(); }}),
+          el('button', {class:'btn sm', type:'button', text:'▼', disabled: i === state.chosen.length-1, onclick: () => { [state.chosen[i+1], state.chosen[i]] = [state.chosen[i], state.chosen[i+1]]; redrawChosen(); }}),
+          el('button', {class:'btn sm danger', type:'button', text:'제거', onclick: () => { state.chosen.splice(i,1); redrawChosen(); }})))
+    ) : [el('div', {class:'empty', text:'아래 목록에서 상품을 담아 주세요.'})]));
+    redrawPick();
+  }
+  function redrawPick(){
+    const active = state.products.filter(p => p.active);
+    pickBox.replaceChildren(...(active.length ? active.map(p => {
+      const taken = state.chosen.some(c => c.product.id === p.id);
+      return el('div', {class:'rowitem'},
+        el('div', {class:'grow'}, el('div', {class:'t'}, p.category ? el('span', {class:'badge', text:p.category}) : null, p.title),
+          el('div', {class:'s', text: p.summary || ''})),
+        el('div', {class:'acts'}, el('button', {class:'btn sm' + (taken ? '' : ' primary'), type:'button', disabled: taken, text: taken ? '담김' : '+ 담기',
+          onclick: () => { state.chosen.push({ product:p, note:'' }); redrawChosen(); }})));
+    }) : [el('div', {class:'empty'}, '사용 가능한 상품이 없습니다. ',
+          el('a', {href:'#', text:'상품 라이브러리', onclick: (e) => { e.preventDefault(); tab = 'products'; render(); }}), '에서 먼저 등록하세요.')]));
+  }
+
+  const form = el('form', {onsubmit: async (e) => {
+    e.preventDefault();
+    if (!state.chosen.length){ toast('상품을 1개 이상 담아 주세요.', 'err'); return; }
+    btn.disabled = true; btn.textContent = '만드는 중…';
+    const code = genCode();
+    try{
+      const pr = await api('/rest/v1/proposals', { method:'POST', headers:{Prefer:'return=minimal'}, body: {
+        code, customer: customer.value.trim(), greeting: greeting.value.trim() || null,
+        expires: noExpiry.checked ? null : (expires.value || null),
+        branch_name: bName.value.trim() || DEFAULT_BRANCH.branch_name, manager_name: bMgr.value.trim() || DEFAULT_BRANCH.manager_name,
+        tel: bTel.value.trim() || DEFAULT_BRANCH.tel, tel_ext: bExt.value.trim() || null } });
+      if (!pr.ok) throw new Error(await errMsg(pr, '제안서 생성에 실패했습니다.'));
+      const it = await api('/rest/v1/proposal_items', { method:'POST', headers:{Prefer:'return=minimal'},
+        body: state.chosen.map((c, i) => ({ proposal_code: code, product_id: c.product.id, note: (c.note || '').trim() || null, sort: i + 1 })) });
+      if (!it.ok){
+        await api(`/rest/v1/proposals?code=eq.${code}`, { method:'DELETE', headers:{Prefer:'return=minimal'} });
+        throw new Error(await errMsg(it, '상품을 담는 중 오류가 발생했습니다.'));
+      }
+      lsSet(BRANCH_KEY, JSON.stringify({ branch_name:bName.value.trim(), manager_name:bMgr.value.trim(), tel:bTel.value.trim(), tel_ext:bExt.value.trim() }));
+      state.createdLink = { url: `${PAGE_URL}?code=${code}`, customer: customer.value.trim() };
+      state.chosen = [];
+      renderCreate();
+    }catch(ex){ toast(ex.message, 'err'); }
+    finally{ btn.disabled = false; btn.textContent = '제안서 링크 만들기'; }
+  }},
+    el('div', {class:'card'},
+      el('h2', {text:'① 고객 정보'}),
+      el('div', {class:'field'}, el('label', {}, '고객(업체)명 ', el('span', {class:'req', text:'*'})), customer),
+      el('div', {class:'field'}, el('label', {}, '인사말 ', el('span', {class:'opt', text:'(선택)'})), greeting),
+      el('div', {class:'field'}, el('label', {text:'유효기간'}), expires,
+        el('label', {class:'inline', style:'margin-top:6px;'}, noExpiry, '기간 제한 없음')),
+      el('details', {}, el('summary', {text:'담당 지점·연락처 (기본값 사용 중 · 필요 시 수정)'}),
+        el('div', {class:'row2'}, el('div', {class:'field'}, el('label', {text:'지점명'}), bName), el('div', {class:'field'}, el('label', {text:'지점장'}), bMgr)),
+        el('div', {class:'row2'}, el('div', {class:'field'}, el('label', {text:'전화'}), bTel), el('div', {class:'field'}, el('label', {text:'내선'}), bExt)))),
+    el('div', {class:'card'},
+      el('h2', {text:'② 제안할 상품 담기'}),
+      el('p', {class:'desc', text:'담은 순서대로 고객 화면에 표시됩니다. ▲▼로 순서를 바꿀 수 있습니다.'}),
+      chosenBox, el('div', {style:'height:14px'}), pickBox),
+    btn);
+
+  view.replaceChildren(form);
+  redrawChosen();
+}
+
+function renderCreated(){
+  const view = document.getElementById('view');
+  const { url, customer } = state.createdLink;
+  const input = el('input', {type:'text', readonly:true, value:url});
+  view.replaceChildren(el('div', {class:'card'},
+    el('h2', {text:`${customer} 제안서가 만들어졌습니다`}),
+    el('p', {class:'desc', text:'아래 링크를 카카오톡·문자로 고객에게 전달하세요.'}),
+    el('div', {class:'linkbox'}, input, el('button', {class:'btn primary sm', type:'button', text:'복사', onclick: async (e) => { await copyText(url); e.target.textContent = '복사됨!'; setTimeout(() => { e.target.textContent = '복사'; }, 1500); }})),
+    el('div', {style:'display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;'},
+      el('a', {class:'btn', href:url, target:'_blank', rel:'noopener', text:'고객 화면 열어보기'}),
+      el('button', {class:'btn', type:'button', text:'새 제안서 만들기', onclick: () => { state.createdLink = null; renderCreate(); }}),
+      el('button', {class:'btn', type:'button', text:'목록 보기', onclick: () => { state.createdLink = null; tab = 'list'; render(); }})),
+    el('p', {class:'hint', style:'margin-top:12px;', text:'참고: 열어보기도 조회수 1회로 집계됩니다.'})));
+}
+
+/* ===== 제안서 목록 ===== */
+async function renderList(){
+  const view = document.getElementById('view');
+  view.replaceChildren(el('div', {class:'empty', text:'불러오는 중…'}));
+  const res = await api('/rest/v1/proposals?select=code,customer,expires,views,last_viewed_at,created_at,proposal_items(count)&order=created_at.desc');
+  if (res.status === 401){ logout(); return; }
+  if (!res.ok){ view.replaceChildren(el('div', {class:'empty', text: await errMsg(res, '목록을 불러오지 못했습니다.')})); return; }
+  const rows = await res.json();
+  const today = todayStr();
+
+  const list = rows.length ? el('div', {class:'list'}, rows.map(r => {
+    const url = `${PAGE_URL}?code=${r.code}`;
+    const expired = r.expires && r.expires < today;
+    const cnt = (r.proposal_items && r.proposal_items[0] && r.proposal_items[0].count) || 0;
+    return el('div', {class:'rowitem'},
+      el('div', {class:'grow'},
+        el('div', {class:'t', text:r.customer}),
+        el('div', {class:'s'},
+          el('span', {class:'badge', text:`상품 ${cnt}개`}),
+          expired ? el('span', {class:'badge red', text:'만료'}) : el('span', {class:'badge green', text: r.expires ? `~ ${r.expires}` : '기간 제한 없음'}),
+          `조회 ${r.views}회 · 최근 ${fmtDT(r.last_viewed_at)}`)),
+      el('div', {class:'acts'},
+        el('button', {class:'btn sm primary', type:'button', text:'링크 복사', onclick: async (e) => { await copyText(url); e.target.textContent = '복사됨!'; setTimeout(() => { e.target.textContent = '링크 복사'; }, 1500); }}),
+        el('a', {class:'btn sm', href:url, target:'_blank', rel:'noopener', text:'열기'}),
+        el('button', {class:'btn sm', type:'button', text:'+30일', onclick: async () => {
+          const base = (r.expires && r.expires >= today) ? r.expires : today;
+          const p = await api(`/rest/v1/proposals?code=eq.${r.code}`, { method:'PATCH', headers:{Prefer:'return=minimal'}, body:{ expires: addDays(base, 30) } });
+          if (!p.ok) toast(await errMsg(p, '변경에 실패했습니다.'), 'err'); else { toast('유효기간을 30일 연장했습니다.'); renderList(); }
+        }}),
+        confirmButton('삭제', '정말 삭제?', async () => {
+          const d = await api(`/rest/v1/proposals?code=eq.${r.code}`, { method:'DELETE', headers:{Prefer:'return=minimal'} });
+          if (!d.ok){ toast(await errMsg(d, '삭제에 실패했습니다.'), 'err'); return; }
+          toast('삭제했습니다.'); renderList();
+        })));
+  })) : el('div', {class:'empty', text:'아직 만든 제안서가 없습니다.'});
+
+  view.replaceChildren(el('div', {class:'card'}, el('h2', {text:`제안서 ${rows.length}건`}),
+    el('p', {class:'desc', text:'링크를 다시 복사하거나 유효기간을 연장할 수 있습니다. 내용 수정이 필요하면 삭제 후 새로 만들어 주세요.'}), list));
+}
+
+start();
+</script>
+</body>
+</html>
