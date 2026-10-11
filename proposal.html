@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>맞춤 제안서 | IBK기업은행</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+  :root{
+    --bg:#FCFCFE; --ink:#1E293B; --ink-strong:#0F172A; --ink-soft:#64748B;
+    --brand:#2563EB; --brand-dark:#1D4ED8; --navy:#14213D; --line:#E2E8F0;
+    --card:#FFFFFF; --radius:16px; --danger:#DC2626;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;
+    -webkit-font-smoothing:antialiased; line-height:1.55;
+    word-break:keep-all; overflow-wrap:anywhere;
+    padding-bottom:84px;
+  }
+  ::selection{background:var(--brand);color:#fff;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  a{color:inherit;}
+
+  /* hero */
+  .hero{
+    position:relative; overflow:hidden; color:#fff; padding:44px 20px 52px;
+    background:
+      radial-gradient(circle at 80% 20%, rgba(2,132,199,.20) 0%, transparent 40%),
+      radial-gradient(circle at 20% 80%, rgba(0,98,234,.28) 0%, transparent 50%),
+      var(--navy);
+  }
+  .hero::before{
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background-image:
+      linear-gradient(to right, rgba(255,255,255,.05) 1px, transparent 1px),
+      linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px);
+    background-size:36px 36px;
+  }
+  .hero-inner{max-width:720px; margin:0 auto; position:relative; z-index:1;}
+  .eyebrow-badge{
+    display:inline-flex; align-items:center; gap:8px; font-size:11.5px; font-weight:700;
+    letter-spacing:.08em; color:#BFDBFE; background:rgba(255,255,255,.08);
+    border:1px solid rgba(255,255,255,.14); border-radius:20px; padding:6px 14px; margin:0 0 16px;
+  }
+  .eyebrow-badge .dot{width:6px;height:6px;border-radius:50%;background:#60A5FA;}
+  h1{font-weight:800; font-size:clamp(22px,5vw,32px); margin:0 0 12px; line-height:1.3;}
+  .hero .lead{font-size:14.5px; color:#CBD5E1; margin:0 0 18px; max-width:560px;}
+  .chips{display:flex; flex-wrap:wrap; gap:8px;}
+  .chip{
+    font-size:12.5px; font-weight:600; color:#E2E8F0;
+    background:rgba(255,255,255,.10); border:1px solid rgba(255,255,255,.16);
+    border-radius:8px; padding:5px 11px;
+  }
+  .chip.warn{color:#FDE68A; border-color:rgba(253,230,138,.35);}
+
+  /* list */
+  .wrap{max-width:720px; margin:-26px auto 40px; padding:0 20px; position:relative; z-index:2;}
+  .item{
+    background:var(--card); border:1px solid var(--line); border-top:3px solid var(--brand);
+    border-radius:var(--radius); box-shadow:0 12px 32px rgba(15,23,42,.07);
+    padding:20px 20px 16px; margin-bottom:18px;
+  }
+  .item-head{display:flex; align-items:center; gap:10px; margin-bottom:10px;}
+  .num{
+    font-family:'JetBrains Mono',monospace; font-weight:800; font-size:13px;
+    color:var(--brand); background:#EFF6FF; border-radius:8px; padding:3px 9px;
+  }
+  .cat{font-size:12px; font-weight:700; color:var(--ink-soft);}
+  .pages{margin-left:auto; font-size:12px; color:var(--ink-soft);}
+  .item h2{font-size:19px; font-weight:800; color:var(--ink-strong); margin:0 0 6px;}
+  .item p.sum{font-size:14px; color:#475569; margin:0;}
+  .note{
+    margin:12px 0 0; padding:10px 13px; font-size:13.5px; color:#1E3A8A;
+    background:#EFF6FF; border-left:3px solid var(--brand); border-radius:6px;
+  }
+  .note b{font-weight:700;}
+  .btns{display:flex; flex-wrap:wrap; gap:8px; margin-top:14px;}
+  .btn{
+    flex:1 1 auto; min-width:92px; text-align:center; cursor:pointer;
+    font:inherit; font-size:13.5px; font-weight:700; text-decoration:none;
+    padding:10px 14px; border-radius:10px; border:1.5px solid var(--line);
+    background:#fff; color:var(--ink-strong);
+  }
+  .btn:hover{border-color:var(--brand); color:var(--brand);}
+  .btn.primary{background:var(--brand); border-color:var(--brand); color:#fff;}
+  .btn.primary:hover{background:var(--brand-dark); border-color:var(--brand-dark); color:#fff;}
+  .preview{display:none; margin-top:14px; border-top:1px dashed var(--line); padding-top:14px;}
+  .preview.open{display:block;}
+  .preview canvas{display:block; width:100%; height:auto; border:1px solid var(--line); border-radius:8px; margin-bottom:10px; background:#fff;}
+  .preview .msg{font-size:13px; color:var(--ink-soft); text-align:center; padding:18px 0;}
+
+  /* state boxes */
+  .state{
+    max-width:520px; margin:70px auto; padding:0 24px; text-align:center;
+  }
+  .state .ico{font-size:40px; margin-bottom:8px;}
+  .state h2{font-size:19px; font-weight:800; color:var(--ink-strong); margin:0 0 8px;}
+  .state p{font-size:14px; color:var(--ink-soft); margin:0;}
+
+  .disclaimer{max-width:720px; margin:0 auto; padding:0 20px 24px; font-size:12px; color:var(--ink-soft);}
+
+  /* contact bar */
+  .bar{
+    position:fixed; left:0; right:0; bottom:0; z-index:10;
+    background:rgba(255,255,255,.96); backdrop-filter:blur(8px);
+    border-top:1px solid var(--line); padding:10px 16px calc(10px + env(safe-area-inset-bottom));
+  }
+  .bar-inner{max-width:720px; margin:0 auto; display:flex; align-items:center; gap:12px;}
+  .bar-info{flex:1; min-width:0; font-size:12.5px; line-height:1.4; color:var(--ink-soft);}
+  .bar-info b{display:block; font-size:14px; color:var(--ink-strong);}
+  .bar .btn{flex:0 0 auto; min-width:0;}
+</style>
+</head>
+<body>
+
+<div id="app"></div>
+
+<script>
+const DATA_URL = "/proposals/data.json";
+const PDF_BASE = "/proposals/";
+const PDFJS_VER = "3.11.174";
+
+const app = document.getElementById('app');
+
+function el(tag, attrs, ...kids){
+  const n = document.createElement(tag);
+  for (const [k,v] of Object.entries(attrs || {})){
+    if (k === 'class') n.className = v;
+    else if (k === 'text') n.textContent = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  kids.flat().forEach(c => { if (c != null) n.append(c.nodeType ? c : document.createTextNode(c)); });
+  return n;
+}
+
+function showState(icon, title, desc){
+  app.replaceChildren(el('div', {class:'state'},
+    el('div', {class:'ico', text:icon}),
+    el('h2', {text:title}),
+    el('p', {text:desc})
+  ));
+}
+
+function fmtDate(s){ return s.replaceAll('-', '.'); }
+function isExpired(s){ return new Date(s + 'T23:59:59+09:00') < new Date(); }
+
+/* ---------- PDF.js (미리보기 눌렀을 때만 불러옴) ---------- */
+let pdfjsPromise = null;
+function loadPdfJs(){
+  if (pdfjsPromise) return pdfjsPromise;
+  pdfjsPromise = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VER}/pdf.min.js`;
+    s.onload = () => {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+        `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VER}/pdf.worker.min.js`;
+      resolve(window.pdfjsLib);
+    };
+    s.onerror = () => { pdfjsPromise = null; reject(new Error('pdfjs load failed')); };
+    document.head.appendChild(s);
+  });
+  return pdfjsPromise;
+}
+
+async function renderPreview(url, box){
+  box.replaceChildren(el('div', {class:'msg', text:'미리보기를 불러오는 중…'}));
+  try{
+    const pdfjsLib = await loadPdfJs();
+    const pdf = await pdfjsLib.getDocument(url).promise;
+    const frag = document.createDocumentFragment();
+    const width = box.clientWidth || 600;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    for (let i = 1; i <= pdf.numPages; i++){
+      const page = await pdf.getPage(i);
+      const base = page.getViewport({scale:1});
+      const vp = page.getViewport({scale:(width / base.width) * dpr});
+      const canvas = document.createElement('canvas');
+      canvas.width = vp.width; canvas.height = vp.height;
+      await page.render({canvasContext: canvas.getContext('2d'), viewport: vp}).promise;
+      frag.append(canvas);
+    }
+    box.replaceChildren(frag);
+  }catch(e){
+    box.replaceChildren(el('div', {class:'msg', text:'미리보기를 불러오지 못했습니다. “열기”를 눌러 확인해 주세요.'}));
+  }
+}
+
+/* ---------- 화면 구성 ---------- */
+function buildCard(idx, item, product){
+  const url = PDF_BASE + product.pdf;
+  const preview = el('div', {class:'preview'});
+  let rendered = false;
+
+  const toggleBtn = el('button', {class:'btn', type:'button', text:'미리보기', onclick: () => {
+    const open = preview.classList.toggle('open');
+    toggleBtn.textContent = open ? '접기' : '미리보기';
+    if (open && !rendered){ rendered = true; renderPreview(url, preview); }
+  }});
+
+  return el('article', {class:'item'},
+    el('div', {class:'item-head'},
+      el('span', {class:'num', text:String(idx + 1).padStart(2, '0')}),
+      el('span', {class:'cat', text:product.category || ''}),
+      el('span', {class:'pages', text:`PDF ${product.pages || ''}장`})
+    ),
+    el('h2', {text:product.title}),
+    el('p', {class:'sum', text:product.summary || ''}),
+    item.note ? el('div', {class:'note'}, el('b', {text:'담당자 코멘트  '}), item.note) : null,
+    el('div', {class:'btns'},
+      toggleBtn,
+      el('a', {class:'btn primary', href:url, target:'_blank', rel:'noopener', text:'열기'}),
+      el('a', {class:'btn', href:url, download:product.pdf, text:'다운로드'})
+    ),
+    preview
+  );
+}
+
+function buildPage(data, proposal){
+  const b = data.branch;
+  const items = (proposal.items || []).filter(it => data.products[it.product]);
+  document.title = `${proposal.customer} 맞춤 제안서 | IBK기업은행 ${b.name}`;
+
+  const chips = [ el('span', {class:'chip', text:`제안 상품 ${items.length}건`}) ];
+  if (proposal.expires) chips.push(el('span', {class:'chip', text:`유효기간 ~ ${fmtDate(proposal.expires)}`}));
+
+  const telText = b.tel + (b.telExt ? ` (${b.telExt})` : '');
+  const telHref = 'tel:' + b.tel.replace(/[^0-9]/g, '');
+
+  app.replaceChildren(
+    el('header', {class:'hero'}, el('div', {class:'hero-inner'},
+      el('p', {class:'eyebrow-badge'}, el('span', {class:'dot'}), `IBK기업은행 ${b.name} · 맞춤 제안서`),
+      el('h1', {text:`${proposal.customer} 고객님께 드리는 제안서`}),
+      proposal.greeting ? el('p', {class:'lead', text:proposal.greeting}) : null,
+      el('div', {class:'chips'}, chips)
+    )),
+    el('main', {class:'wrap'}, items.map((it, i) => buildCard(i, it, data.products[it.product]))),
+    el('p', {class:'disclaimer', text:'본 자료는 상담을 위한 참고용 제안서이며, 실제 상품 조건·금리·한도는 심사 및 거래 실적에 따라 달라질 수 있습니다. 가입 전 상품설명서와 약관을 확인해 주시기 바랍니다.'}),
+    el('div', {class:'bar'}, el('div', {class:'bar-inner'},
+      el('div', {class:'bar-info'}, el('b', {text:`${b.name} ${b.manager} 지점장`}), telText),
+      el('a', {class:'btn primary', href:telHref, text:'전화 문의'})
+    ))
+  );
+}
+
+(async function init(){
+  const code = new URLSearchParams(location.search).get('code');
+  if (!code){
+    showState('🔗', '제안서 링크가 올바르지 않습니다', '담당자에게 받은 전체 링크로 다시 접속해 주세요.');
+    return;
+  }
+  let data;
+  try{
+    const res = await fetch(DATA_URL, {cache:'no-cache'});
+    if (!res.ok) throw new Error(res.status);
+    data = await res.json();
+  }catch(e){
+    showState('⚠️', '제안서를 불러오지 못했습니다', '잠시 후 다시 시도해 주세요.');
+    return;
+  }
+  const proposal = Object.prototype.hasOwnProperty.call(data.proposals, code) ? data.proposals[code] : null;
+  if (!proposal){
+    showState('🔍', '제안서를 찾을 수 없습니다', '링크가 정확한지 확인하시거나 담당자에게 문의해 주세요.');
+    return;
+  }
+  if (proposal.expires && isExpired(proposal.expires)){
+    showState('⏱️', '제안서 유효기간이 지났습니다', `담당자(${data.branch.name} ${data.branch.manager} 지점장, ${data.branch.tel})에게 문의해 주세요.`);
+    return;
+  }
+  buildPage(data, proposal);
+})();
+</script>
+</body>
+</html>
