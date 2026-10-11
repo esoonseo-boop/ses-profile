@@ -141,6 +141,8 @@
   }
   .cta:hover{background:var(--c-acc-d);}
   .cta:disabled{background:#475569; cursor:wait;}
+  .cta2{width:100%; margin-top:10px; padding:12px; font-size:14.5px; font-weight:700; border-radius:12px; cursor:pointer; color:#fff; background:rgba(255,255,255,.08); border:1.5px solid rgba(255,255,255,.28);}
+  .cta2:hover{background:rgba(255,255,255,.14);} .cta2:disabled{opacity:.6; cursor:wait;}
   .contact{margin-top:20px; font-size:13px; color:#CBD5E1; line-height:1.6;}
   .contact b{color:#fff; font-size:14.5px;}
   .contact a{color:var(--c-soft); font-weight:700;}
@@ -263,6 +265,182 @@ async function downloadPdf(url, filename){
   }
 }
 
+/* ---------- 표지 포함 전체 제안서 PDF 저장 ---------- */
+const PDFLIB_VER = "1.17.1";
+let pdfLibPromise = null;
+function loadPdfLib(){
+  if (window.PDFLib) return Promise.resolve(window.PDFLib);
+  if (pdfLibPromise) return pdfLibPromise;
+  pdfLibPromise = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = `https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/${PDFLIB_VER}/pdf-lib.min.js`;
+    s.onload = () => resolve(window.PDFLib);
+    s.onerror = () => { pdfLibPromise = null; reject(new Error('pdf-lib load failed')); };
+    document.head.appendChild(s);
+  });
+  return pdfLibPromise;
+}
+function loadImage(src){
+  return new Promise((resolve) => { const im = new Image(); im.onload = () => resolve(im); im.onerror = () => resolve(null); im.src = src; });
+}
+function toast(msg){
+  const t = el('div', {text:msg, style:'position:fixed;left:50%;bottom:84px;transform:translateX(-50%);z-index:99;max-width:86vw;padding:10px 16px;border-radius:10px;background:#0F172A;color:#fff;font-size:13.5px;border:1px solid #334155;box-shadow:0 8px 24px rgba(0,0,0,.4);text-align:center;'});
+  document.body.append(t); setTimeout(() => t.remove(), 3800);
+}
+
+/* 표지를 캔버스에 직접 그려 이미지(JPEG)로 만든다. W,H = 표지 쪽 크기(pt) */
+async function renderCoverJpeg(W, H){
+  const v = V.view, b = v.branch;
+  const cs = getComputedStyle(coverEl);
+  const col = (n, d) => (cs.getPropertyValue(n) || d).trim() || d;
+  const C = { bg:col('--c-bg','#14213D'), g1:col('--c-g1','rgba(2,132,199,.25)'), g2:col('--c-g2','rgba(0,98,234,.30)'),
+              soft:col('--c-soft','#BFDBFE'), dot:col('--c-dot','#60A5FA') };
+  try{ await Promise.all([document.fonts.load('700 24px Pretendard'), document.fonts.load('500 24px Pretendard')]); }catch(e){}
+  const ci = await loadImage('/ci.png');
+
+  const px = 1800 / Math.max(W, H), pw = Math.round(W * px), ph = Math.round(H * px);
+  const cv = document.createElement('canvas'); cv.width = pw; cv.height = ph;
+  const g = cv.getContext('2d');
+  const FF = `Pretendard, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif`;
+  const MONO = `'JetBrains Mono', ui-monospace, Menlo, monospace`;
+
+  // 배경
+  g.fillStyle = C.bg; g.fillRect(0, 0, pw, ph);
+  let gr = g.createRadialGradient(pw * .82, ph * .12, 0, pw * .82, ph * .12, Math.max(pw, ph) * .55);
+  gr.addColorStop(0, C.g1); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(0, 0, pw, ph);
+  gr = g.createRadialGradient(pw * .12, ph * .88, 0, pw * .12, ph * .88, Math.max(pw, ph) * .62);
+  gr.addColorStop(0, C.g2); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(0, 0, pw, ph);
+  g.strokeStyle = 'rgba(255,255,255,.04)'; g.lineWidth = 1;
+  const step = 36 * px * 1.6;
+  for (let x = 0; x < pw; x += step){ g.beginPath(); g.moveTo(x, 0); g.lineTo(x, ph); g.stroke(); }
+  for (let y = 0; y < ph; y += step){ g.beginPath(); g.moveTo(0, y); g.lineTo(pw, y); g.stroke(); }
+
+  const landscape = pw > ph;
+  let cw = landscape ? pw * .58 : pw * .84, u = cw / 720;
+  const font = (w, size) => `${w} ${size * u}px ${FF}`;
+  const wrap = (text, maxW) => {
+    const lines = []; let line = '';
+    for (const word of String(text).split(/\s+/)){
+      const test = line ? line + ' ' + word : word;
+      if (g.measureText(test).width <= maxW || !line){ line = test; }
+      else { lines.push(line); line = word; }
+      while (g.measureText(line).width > maxW){           // 너무 긴 단어는 글자 단위로 자름
+        let k = line.length; while (k > 1 && g.measureText(line.slice(0, k)).width > maxW) k--;
+        lines.push(line.slice(0, k)); line = line.slice(k);
+      }
+    }
+    if (line) lines.push(line); return lines;
+  };
+  const rr = (x, y, w, h, r) => { g.beginPath(); g.roundRect ? g.roundRect(x, y, w, h, r) : g.rect(x, y, w, h); };
+  const pages = (i) => V.docs[i] ? V.docs[i].numPages : (v.items[i].product.pages || 0);
+
+  const body = (x0, y, draw) => {          // draw=false 면 높이만 계산
+    const mw = 720 * u; g.textBaseline = 'alphabetic';
+    const T = (txt, size, wt, color, dy, lh, maxW) => {
+      g.font = font(wt, size); g.fillStyle = color;
+      const ls = wrap(txt, maxW || mw);
+      ls.forEach((l) => { y += (lh || size * 1.3) * u; if (draw) g.fillText(l, x0, y - (lh || size * 1.3) * u * .22); });
+      y += (dy || 0) * u; return ls.length;
+    };
+    T('맞춤 제안서', 22, 600, C.soft, 6, 30);
+    T(`${v.customer} 고객님께`, 48, 800, '#fff', 14, 62);
+    if (v.greeting) T(v.greeting, 22, 500, '#CBD5E1', 22, 34);
+    // 칩
+    const chips = []; if (v.created) chips.push(`제안일 ${fmtDate(v.created)}`); if (v.expires) chips.push(`유효기간 ~ ${fmtDate(v.expires)}`); chips.push(`제안 상품 ${v.items.length}건`);
+    g.font = font(600, 19); let cx = x0; y += 4 * u;
+    chips.forEach((t) => {
+      const w = g.measureText(t).width + 32 * u, h = 40 * u;
+      if (cx + w > x0 + mw){ cx = x0; y += (h + 10 * u); }
+      if (draw){ rr(cx, y, w, h, 9 * u); g.fillStyle = 'rgba(255,255,255,.10)'; g.fill(); g.strokeStyle = 'rgba(255,255,255,.18)'; g.lineWidth = 1.5; g.stroke();
+        g.fillStyle = '#E2E8F0'; g.font = font(600, 19); g.fillText(t, cx + 16 * u, y + 27 * u); }
+      cx += w + 10 * u;
+    });
+    y += 40 * u + 30 * u;
+    // 목차
+    if (draw){ g.fillStyle = 'rgba(255,255,255,.16)'; g.fillRect(x0, y, mw, 1.5); }
+    let pageNo = 2;                                          // 표지가 1쪽
+    v.items.forEach((it, i) => {
+      const rh = 58 * u;
+      if (draw){
+        g.font = `800 ${19 * u}px ${MONO}`; g.fillStyle = C.dot; g.fillText(pad2(i + 1), x0 + 2 * u, y + 37 * u);
+        g.font = font(700, 24); g.fillStyle = '#fff'; g.fillText(it.product.title, x0 + 52 * u, y + 38 * u);
+        const n = pages(i), label = n ? (n > 1 ? `${pageNo}–${pageNo + n - 1}쪽` : `${pageNo}쪽`) : '';
+        g.font = font(500, 19); g.fillStyle = '#94A3B8'; g.textAlign = 'right'; g.fillText(label, x0 + mw - 2 * u, y + 37 * u); g.textAlign = 'left';
+        g.fillStyle = 'rgba(255,255,255,.16)'; g.fillRect(x0, y + rh, mw, 1.5);
+      }
+      pageNo += pages(i) || 1; y += rh;
+    });
+    y += 34 * u;
+    T(`${b.name} ${b.manager} 지점장`, 23, 800, '#fff', 4, 32);
+    T(`문의 ${b.tel}${b.telExt ? ` (${b.telExt})` : ''}`, 21, 600, C.soft, 20, 30);
+    T('본 자료는 상담을 위한 참고용 제안서이며, 실제 상품 조건·금리·한도는 심사 및 거래 실적에 따라 달라질 수 있습니다. 가입 전 상품설명서와 약관을 확인해 주시기 바랍니다.', 16.5, 500, '#94A3B8', 0, 25);
+    return y;
+  };
+
+  // 높이 측정 후 쪽에 맞게 축소
+  const topH = (ci ? 54 : 40) * u, topY = ph * .06;
+  const availH = ph - topY - topH - ph * .05 - 20 * u;
+  g.font = font(500, 20);
+  let h0 = body(0, 0, false);
+  if (h0 > availH){ u *= availH / h0; cw = 720 * u; h0 = body(0, 0, false); }
+  const x0 = (pw - cw) / 2;
+
+  // 상단: 왼쪽 지점명 배지 / 오른쪽 CI
+  const bt = `기업은행 ${b.name}`; g.font = font(700, 19);
+  const bw = g.measureText(bt).width + 54 * u, bh = 40 * u, by = topY + (topH - bh) / 2;
+  rr(x0, by, bw, bh, 20 * u); g.fillStyle = 'rgba(255,255,255,.08)'; g.fill(); g.strokeStyle = 'rgba(255,255,255,.16)'; g.lineWidth = 1.5; g.stroke();
+  g.beginPath(); g.arc(x0 + 20 * u, by + bh / 2, 4 * u, 0, Math.PI * 2); g.fillStyle = C.dot; g.fill();
+  g.fillStyle = C.soft; g.textBaseline = 'middle'; g.font = font(700, 19); g.fillText(bt, x0 + 34 * u, by + bh / 2 + 1); g.textBaseline = 'alphabetic';
+  if (ci){ const ch = topH, cwid = ci.width * (ch / ci.height); g.drawImage(ci, x0 + cw - cwid, topY, cwid, ch); }
+
+  // 본문(남은 영역 세로 중앙)
+  const yStart = topY + topH + 20 * u + Math.max(0, (availH - h0) / 2);
+  body(x0, yStart, true);
+
+  const blob = await new Promise((res) => cv.toBlob(res, 'image/jpeg', 0.92));
+  return new Uint8Array(await blob.arrayBuffer());
+}
+
+/* 표지 + 모든 상품 PDF를 한 파일로 합쳐 저장 */
+async function downloadAll(btn){
+  if (!V.view || btn.disabled) return;
+  const label = btn.textContent; btn.disabled = true; btn.textContent = '만드는 중…';
+  try{
+    const { PDFDocument } = await withTimeout(loadPdfLib(), 10000);
+    const out = await PDFDocument.create();
+    const srcs = await Promise.all(V.view.items.map(async (it) => {
+      try{
+        const res = await fetch(it.product.url); if (!res.ok) throw new Error(res.status);
+        return await PDFDocument.load(await res.arrayBuffer(), { ignoreEncryption:true });
+      }catch(e){ return null; }
+    }));
+    const first = srcs.find(Boolean);
+    let W = 595.28, H = 841.89;
+    if (first && first.getPageCount()){ const sz = first.getPage(0).getSize(); W = sz.width; H = sz.height; }
+
+    const jpg = await out.embedJpg(await renderCoverJpeg(W, H));
+    out.addPage([W, H]).drawImage(jpg, { x:0, y:0, width:W, height:H });
+    let ok = 0;
+    for (const d of srcs){
+      if (!d) continue;
+      (await out.copyPages(d, d.getPageIndices())).forEach(pg => out.addPage(pg)); ok++;
+    }
+    out.setTitle(`${V.view.customer} 맞춤 제안서`); out.setAuthor(`IBK기업은행 ${V.view.branch.name}`);
+    const bytes = await out.save();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([bytes], { type:'application/pdf' }));
+    const ymd = (String(V.view.created || '').slice(0, 10).replaceAll('-', '')) || new Date().toLocaleDateString('sv-SE', {timeZone:'Asia/Seoul'}).replaceAll('-', '');
+    a.download = `${V.view.customer.replace(/[\\/:*?"<>|]/g, '')}_${ymd}.pdf`;
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 8000);
+    if (ok < srcs.length) toast(`일부 상품(${srcs.length - ok}건)은 불러오지 못해 제외되었습니다.`);
+  }catch(e){
+    toast('전체 PDF를 만들지 못했습니다. 상품별 PDF 받기를 이용해 주세요.');
+  }finally{
+    btn.disabled = false; btn.textContent = label;
+  }
+}
+
 /* =====================================================================
    한 장씩 보는 뷰어: 표지 → 상품별 제안서(쪽 단위) , 다운로드 버튼
    ===================================================================== */
@@ -287,9 +465,7 @@ function buildViewer(view){
   btnPrev = el('button', {class:'vbtn', type:'button', text:'◀', 'aria-label':'이전', onclick: () => go(V.idx - 1)});
   btnNext = el('button', {class:'vbtn primary', type:'button', text:'▶', 'aria-label':'다음', onclick: () => go(V.idx + 1)});
   btnZoom = el('button', {class:'vbtn', type:'button', text:'🔍 확대', onclick: toggleZoom});
-  btnDown = el('button', {class:'vbtn primary', type:'button', text:'⬇ PDF', onclick: () => {
-    const s = V.slides[V.idx]; if (s && s.t === 'pdf') downloadCurrent(s.i);
-  }});
+  btnDown = el('button', {class:'vbtn primary', type:'button', text:'⬇ 전체 PDF', onclick: () => downloadAll(btnDown)});
   vtitle = el('div', {class:'vtitle'});
   vprogText = el('div', {});
   vprogBar = el('i', {});
@@ -357,7 +533,7 @@ function updateChrome(){
     const it = V.view.items[s.i];
     vtitle.replaceChildren(el('b', {text:`${pad2(s.i + 1)} · ${it.product.title}`}), el('span', {text:`${s.p} / ${s.pages}쪽`}));
   }
-  btnDown.style.display = s.t === 'pdf' ? '' : 'none';
+  btnDown.style.display = V.ready ? '' : 'none';
   btnZoom.style.display = s.t === 'pdf' && !s.failed ? '' : 'none';
   btnZoom.textContent = V.zoom ? '↔ 맞춤' : '🔍 확대';
   btnZoom.classList.toggle('on', V.zoom);
@@ -466,6 +642,7 @@ function buildCover(){
     v.greeting ? el('p', {class:'lead', text:v.greeting}) : null,
     el('div', {class:'meta'}, meta),
     toc, cta,
+    el('button', {class:'cta2', type:'button', text:'⬇ 표지 포함 전체 PDF 저장', onclick: (e) => downloadAll(e.currentTarget)}),
     el('div', {class:'contact'}, el('b', {text:`${b.name} ${b.manager} 지점장`}), el('br'),
       '문의 ', el('a', {href:'tel:' + b.tel.replace(/[^0-9]/g, ''), text:telText})),
     swatchRow(),
