@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta name="referrer" content="no-referrer">
+<title>직원 상담 관리 | IBK기업은행</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+  :root{
+    --bg:#F8FAFC; --ink:#1E293B; --ink-strong:#0F172A; --ink-soft:#64748B;
+    --brand:#2563EB; --brand-dark:#1D4ED8; --navy:#14213D; --line:#E2E8F0;
+    --card:#FFFFFF; --radius:14px; --danger:#DC2626; --ok:#16A34A; --warn:#B45309;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--bg); color:var(--ink); font-family:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;
+    -webkit-font-smoothing:antialiased; line-height:1.5; word-break:keep-all; overflow-wrap:anywhere;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  .top{background:var(--navy); color:#fff; padding:14px 20px;}
+  .top-inner{max-width:900px; margin:0 auto; display:flex; align-items:center; gap:12px;}
+  .top h1{font-size:17px; font-weight:800; margin:0; flex:1;}
+  .top .who{font-size:12.5px; color:#CBD5E1;}
+  .wrap{max-width:900px; margin:0 auto; padding:18px 20px 60px;}
+  .notice{background:#FFFBEB; border:1px solid #FDE68A; color:#92400E; border-radius:12px; padding:10px 14px; font-size:12.5px; margin-bottom:16px;}
+  .notice b{color:#78350F;}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:18px; margin-bottom:16px;}
+  .card h2{font-size:15.5px; font-weight:800; margin:0 0 4px; color:var(--ink-strong);}
+  .card .desc{font-size:13px; color:var(--ink-soft); margin:0 0 14px;}
+
+  .tabs{display:flex; gap:6px; margin-bottom:16px; flex-wrap:wrap;}
+  .tab{font:inherit; font-size:14px; font-weight:700; cursor:pointer; padding:9px 16px; border-radius:10px; border:1.5px solid var(--line); background:#fff; color:var(--ink-soft);}
+  .tab.active{background:var(--brand); border-color:var(--brand); color:#fff;}
+
+  .stats{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:16px;}
+  @media (max-width:640px){ .stats{grid-template-columns:repeat(2,1fr);} }
+  .stat{background:#fff; border:1px solid var(--line); border-radius:12px; padding:12px 14px;}
+  .stat .n{font-size:24px; font-weight:800; color:var(--ink-strong); font-family:'JetBrains Mono',monospace;}
+  .stat .l{font-size:12.5px; color:var(--ink-soft);}
+  .stat.warn .n{color:var(--warn);} .stat.red .n{color:var(--danger);}
+
+  .field{margin-bottom:12px;}
+  .field label{display:block; font-size:13px; font-weight:700; color:var(--ink-strong); margin-bottom:5px;}
+  .field label .req{color:var(--danger);} .field label .opt{color:var(--ink-soft); font-weight:500; font-size:12px;}
+  input[type=text],input[type=email],input[type=password],input[type=date],textarea,select{
+    width:100%; padding:10px 12px; font:inherit; font-size:14.5px; color:var(--ink-strong);
+    border:1.5px solid var(--line); border-radius:10px; background:#fff;}
+  textarea{resize:vertical; min-height:84px;}
+  input:focus,textarea:focus,select:focus{outline:none; border-color:var(--brand); box-shadow:0 0 0 3px rgba(37,99,235,.12);}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .row3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;}
+  @media (max-width:600px){ .row2,.row3{grid-template-columns:1fr;} }
+  .hint{font-size:12px; color:var(--ink-soft); margin-top:4px;}
+  .hint.err{color:var(--danger);} .hint.warn{color:var(--warn); font-weight:600;}
+  .inline{display:flex; align-items:center; gap:8px; font-size:13px; color:var(--ink-soft);}
+  .inline input{width:auto;}
+
+  .btn{font:inherit; font-size:13.5px; font-weight:700; cursor:pointer; display:inline-block; text-align:center;
+    padding:9px 14px; border-radius:9px; border:1.5px solid var(--line); background:#fff; color:var(--ink-strong);}
+  .btn:hover{border-color:var(--brand); color:var(--brand);}
+  .btn.primary{background:var(--brand); border-color:var(--brand); color:#fff;}
+  .btn.primary:hover{background:var(--brand-dark); border-color:var(--brand-dark); color:#fff;}
+  .btn.danger{color:var(--danger);} .btn.danger:hover{border-color:var(--danger); color:var(--danger);}
+  .btn.sm{padding:6px 10px; font-size:12.5px; border-radius:8px;}
+  .btn.block{width:100%; padding:12px; font-size:15px;}
+  .btn:disabled{opacity:.5; cursor:not-allowed;}
+  .actions{display:flex; gap:8px; flex-wrap:wrap; margin-top:6px;}
+
+  .list{display:flex; flex-direction:column; gap:8px;}
+  .rowitem{display:flex; align-items:center; gap:12px; padding:11px 14px; border:1px solid var(--line); border-radius:12px; background:#fff;}
+  .rowitem.click{cursor:pointer;} .rowitem.click:hover{border-color:var(--brand);}
+  .rowitem.dim{opacity:.55;}
+  .rowitem .grow{flex:1; min-width:0;}
+  .rowitem .t{font-weight:700; color:var(--ink-strong); font-size:14.5px;}
+  .rowitem .s{font-size:12.5px; color:var(--ink-soft);}
+  .ava{flex:none; min-width:42px; height:42px; padding:0 8px; border-radius:12px; background:#EFF6FF; color:var(--brand); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:14px; font-family:'JetBrains Mono',monospace;}
+  .badge{display:inline-block; font-size:11.5px; font-weight:700; padding:2px 8px; border-radius:20px; background:#EFF6FF; color:var(--brand); margin-right:6px;}
+  .badge.gray{background:#F1F5F9; color:var(--ink-soft);} .badge.red{background:#FEF2F2; color:var(--danger);}
+  .badge.green{background:#F0FDF4; color:var(--ok);} .badge.amber{background:#FFFBEB; color:var(--warn);}
+  .empty{text-align:center; color:var(--ink-soft); font-size:13.5px; padding:18px 0;}
+  h3.sec{font-size:14px; margin:16px 0 8px; color:var(--ink-strong);} h3.sec:first-child{margin-top:0;}
+
+  .tl{position:relative; margin:4px 0 0 6px; padding-left:18px; border-left:2px solid var(--line);}
+  .tli{position:relative; margin-bottom:14px;}
+  .tli::before{content:""; position:absolute; left:-25px; top:6px; width:10px; height:10px; border-radius:50%; background:var(--brand); border:2px solid #fff; box-shadow:0 0 0 2px var(--line);}
+  .tli .d{font-size:12.5px; color:var(--ink-soft); font-weight:600;}
+  .tli .sm-text{white-space:pre-wrap; font-size:14px; color:var(--ink-strong); margin:3px 0;}
+  .fu{display:flex; align-items:center; gap:8px; font-size:13px; background:#F8FAFC; border:1px dashed var(--line); border-radius:8px; padding:6px 10px; margin-top:4px;}
+  .fu input{width:auto;} .fu.done .ft{text-decoration:line-through; color:var(--ink-soft);}
+  .back{background:none; border:none; color:var(--brand); font:inherit; font-weight:700; cursor:pointer; padding:0; margin-bottom:10px;}
+
+  .toast{position:fixed; left:50%; bottom:24px; transform:translate(-50%,20px); opacity:0; pointer-events:none;
+    max-width:min(92vw,520px); padding:12px 18px; border-radius:10px; font-size:14px; font-weight:600; color:#fff; background:var(--ink-strong); transition:all .2s; z-index:50;}
+  .toast.show{opacity:1; transform:translate(-50%,0);} .toast.err{background:var(--danger);} .toast.ok{background:var(--ok);}
+  .login{max-width:400px; margin:60px auto;}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast" class="toast" role="status"></div>
+
+<script>
+const SUPABASE_URL = "https://oqeiaaworcarixndtomj.supabase.co";
+const SUPABASE_KEY = "sb_publishable_xVY0MJETNgpC820jW4yO1w_XUd9QzqZ";
+const SESSION_KEY  = "staff_notes_session";     // 탭을 닫으면 사라지는 sessionStorage 사용
+const IDLE_MS      = 10 * 60 * 1000;            // 10분 미사용 시 자동 로그아웃
+const GAP_DAYS     = 90;                        // 이 기간 넘게 상담이 없으면 "상담 공백"
+const KINDS = ['업무','경력','고충','성과','기타'];
+const app = document.getElementById('app');
+
+/* ---------- 유틸 ---------- */
+function el(tag, attrs, ...kids){
+  const n = document.createElement(tag);
+  for (const [k,v] of Object.entries(attrs || {})){
+    if (k === 'class') n.className = v;
+    else if (k === 'text') n.textContent = v;
+    else if (k === 'value') n.value = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else if (v === true) n.setAttribute(k, '');
+    else if (v !== false && v != null) n.setAttribute(k, v);
+  }
+  kids.flat().forEach(c => { if (c != null && c !== false) n.append(c.nodeType ? c : document.createTextNode(c)); });
+  return n;
+}
+function toast(msg, type){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast show ' + (type || 'ok');
+  clearTimeout(toast._t); toast._t = setTimeout(() => { t.className = 'toast'; }, 4000);
+}
+const pad = (n) => String(n).padStart(2, '0');
+const todayStr = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; };
+const dayDiff = (a, b) => Math.round((new Date(a + 'T00:00:00Z') - new Date(b + 'T00:00:00Z')) / 86400000);
+const fmtD = (s) => s ? s.replaceAll('-', '.') : '';
+function ssGet(k){ try{ return sessionStorage.getItem(k); }catch(e){ return null; } }
+function ssSet(k,v){ try{ sessionStorage.setItem(k,v); }catch(e){} }
+function ssDel(k){ try{ sessionStorage.removeItem(k); }catch(e){} }
+function confirmButton(label, confirmLabel, onConfirm, cls){
+  let armed = false, timer;
+  const b = el('button', {class: cls || 'btn danger sm', type:'button', text:label, onclick: async () => {
+    if (!armed){ armed = true; b.textContent = confirmLabel; timer = setTimeout(() => { armed = false; b.textContent = label; }, 3000); return; }
+    clearTimeout(timer); armed = false; b.disabled = true;
+    try{ await onConfirm(); } finally { b.disabled = false; b.textContent = label; }
+  }});
+  return b;
+}
+
+/* ---------- 입력 점검: 개인식별/민감정보 방지 ---------- */
+const BLOCK = [
+  [/\d{6}\s*-?\s*[1-4]\d{6}/, '주민등록번호 형식'],
+  [/\b0\d{1,2}\s*-?\s*\d{3,4}\s*-?\s*\d{4}\b/, '전화번호 형식'],
+  [/[\w.+-]+@[\w-]+\.[\w.]+/, '이메일 주소'],
+  [/\d{3,}-\d{2,}-\d{4,}/, '계좌번호로 보이는 숫자']
+];
+const SENSITIVE = ['건강','질병','병원','진단','우울','치료','수술','임신','가정사','이혼','가족','종교','정당','노조','징계','소송','고소','폭언','괴롭힘'];
+function scan(...texts){
+  const t = texts.filter(Boolean).join(' \n ');
+  const block = BLOCK.filter(([re]) => re.test(t)).map(x => x[1]);
+  const warn = SENSITIVE.filter(w => t.includes(w));
+  return { block, warn };
+}
+
+/* ---------- 인증 ---------- */
+let session = null;
+try{ session = JSON.parse(ssGet(SESSION_KEY) || 'null'); }catch(e){ session = null; }
+function saveSession(s){
+  session = s ? { access_token:s.access_token, refresh_token:s.refresh_token,
+                  expires_at: Math.floor(Date.now()/1000) + (s.expires_in || 3600),
+                  email: (s.user && s.user.email) || (session && session.email) || '' } : null;
+  if (session) ssSet(SESSION_KEY, JSON.stringify(session)); else ssDel(SESSION_KEY);
+}
+const authCall = (grant, body) => fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=${grant}`, {
+  method:'POST', headers:{ apikey:SUPABASE_KEY, 'Content-Type':'application/json' }, body: JSON.stringify(body) });
+async function refreshSession(){
+  if (!session || !session.refresh_token) return false;
+  try{ const res = await authCall('refresh_token', { refresh_token: session.refresh_token });
+       if (!res.ok){ saveSession(null); return false; } saveSession(await res.json()); return true; }
+  catch(e){ return false; }
+}
+async function api(path, opts){
+  opts = opts || {};
+  if (session && session.expires_at - Math.floor(Date.now()/1000) < 60) await refreshSession();
+  const send = () => fetch(SUPABASE_URL + path, {
+    method: opts.method || 'GET',
+    headers: Object.assign({ apikey: SUPABASE_KEY, Authorization: 'Bearer ' + (session ? session.access_token : SUPABASE_KEY) },
+                           opts.body ? {'Content-Type':'application/json'} : {}, opts.headers || {}),
+    body: opts.body ? JSON.stringify(opts.body) : undefined });
+  let res = await send();
+  if (res.status === 401 && session && await refreshSession()) res = await send();
+  return res;
+}
+async function errMsg(res, fb){ try{ const j = await res.json(); return j.message || j.error_description || fb; }catch(e){ return fb; } }
+
+/* ---------- 상태 ---------- */
+const S = { staff: [], counsels: [], view:'dash', sel:null, editStaff:false, editCounsel:null, showInactive:false };
+let idleTimer = null;
+function armIdle(){
+  clearTimeout(idleTimer);
+  if (!session) return;
+  idleTimer = setTimeout(() => logout('10분간 사용이 없어 자동 로그아웃되었습니다.'), IDLE_MS);
+}
+['pointerdown','keydown','touchstart'].forEach(ev => window.addEventListener(ev, armIdle, {passive:true}));
+function logout(msg){
+  saveSession(null); clearTimeout(idleTimer);
+  S.staff = []; S.counsels = []; S.sel = null; S.view = 'dash'; S.editStaff = false; S.editCounsel = null;   // 메모리의 데이터도 비움
+  renderLogin(msg);
+}
+
+/* ---------- 로그인 ---------- */
+function renderLogin(msg){
+  const email = el('input', {type:'email', autocomplete:'username', placeholder:'이메일', required:true});
+  const pw = el('input', {type:'password', autocomplete:'current-password', placeholder:'비밀번호', required:true});
+  const err = el('div', {class:'hint err', style:'min-height:18px;', text: msg || ''});
+  const btn = el('button', {class:'btn primary block', type:'submit', text:'로그인'});
+  const form = el('form', {onsubmit: async (e) => {
+    e.preventDefault(); err.textContent = ''; btn.disabled = true; btn.textContent = '로그인 중…';
+    try{
+      const res = await authCall('password', { email: email.value.trim(), password: pw.value });
+      if (!res.ok){ err.textContent = res.status === 400 ? '이메일 또는 비밀번호가 올바르지 않습니다.' : '로그인에 실패했습니다.'; return; }
+      saveSession(await res.json());
+      if (!(await start())) return;
+    }catch(ex){ err.textContent = '네트워크 오류가 발생했습니다.'; }
+    finally{ btn.disabled = false; btn.textContent = '로그인'; pw.value = ''; }
+  }}, el('div', {class:'field'}, el('label', {text:'이메일'}), email),
+      el('div', {class:'field'}, el('label', {text:'비밀번호'}), pw), err, btn);
+  app.replaceChildren(
+    el('div', {class:'top'}, el('div', {class:'top-inner'}, el('h1', {text:'직원 상담 관리'}))),
+    el('div', {class:'wrap'}, el('div', {class:'card login'}, el('h2', {text:'지점장 로그인'}),
+      el('p', {class:'desc', text:'지점장 계정만 사용할 수 있습니다. 영업 CRM과 별도의 화면·데이터입니다.'}), form)));
+}
+
+/* ---------- 데이터 로드 ---------- */
+async function loadAll(){
+  const [a, b] = await Promise.all([
+    api('/rest/v1/staff_members?select=*&order=created_at.asc'),
+    api('/rest/v1/staff_counsels?select=*&order=counsel_date.desc,created_at.desc')
+  ]);
+  if (!a.ok || !b.ok){
+    const code = a.ok ? b.status : a.status;
+    if (code === 401 || code === 403) return 'noauth';
+    if (code === 404) return 'notable';
+    return 'error';
+  }
+  S.staff = await a.json(); S.counsels = await b.json(); return 'ok';
+}
+async function start(){
+  if (!session){ renderLogin(); return false; }
+  const r = await loadAll();
+  if (r === 'noauth'){ saveSession(null); renderLogin('이 계정은 직원 상담 관리 권한이 없습니다.'); return false; }
+  if (r === 'notable'){ saveSession(null); renderLogin('DB 설정(staff_notes.sql)이 아직 적용되지 않았습니다.'); return false; }
+  if (r === 'error'){ saveSession(null); renderLogin('불러오지 못했습니다. 잠시 후 다시 시도해 주세요.'); return false; }
+  armIdle(); render(); return true;
+}
+
+/* ---------- 계산 ---------- */
+const countsOf = (id) => S.counsels.filter(c => c.staff_id === id);
+function summary(){
+  const today = todayStr();
+  const active = S.staff.filter(s => s.active);
+  const info = active.map(s => {
+    const cs = countsOf(s.id), last = cs[0] || null;
+    const next = last && last.next_date ? last.next_date : null;
+    return { s, cs, last, gap: last ? dayDiff(today, last.counsel_date) : null, next };
+  });
+  const open = S.counsels.filter(c => c.follow_up && !c.follow_done)
+    .sort((a, b) => (a.follow_due || '9999').localeCompare(b.follow_due || '9999'));
+  const soon = info.filter(i => i.next && dayDiff(i.next, today) <= 7).sort((a, b) => a.next.localeCompare(b.next));
+  const soonIds = new Set(soon.map(i => i.s.id));
+  const gapList = info.filter(i => !soonIds.has(i.s.id) && (i.gap == null || i.gap > GAP_DAYS))
+    .sort((a, b) => (b.gap == null ? 1e9 : b.gap) - (a.gap == null ? 1e9 : a.gap));
+  return { today, active, info, open, soon, gapList };
+}
+const staffById = (id) => S.staff.find(s => s.id === id);
+
+/* ---------- 화면 ---------- */
+function render(){
+  const tabs = el('div', {class:'tabs'},
+    [['dash','오늘 할 일'],['staff','직원 목록']].map(([k, t]) =>
+      el('button', {class:'tab' + ((S.view === k || (S.view === 'detail' && k === 'staff')) ? ' active' : ''), type:'button', text:t,
+        onclick: () => { S.view = k; S.sel = null; S.editStaff = false; S.editCounsel = null; render(); }})));
+  const body = S.view === 'dash' ? viewDash() : S.view === 'staff' ? viewStaff() : viewDetail();
+  app.replaceChildren(
+    el('div', {class:'top'}, el('div', {class:'top-inner'}, el('h1', {text:'직원 상담 관리'}),
+      el('span', {class:'who', text: session ? session.email : ''}),
+      el('button', {class:'btn sm', type:'button', text:'로그아웃', onclick: () => logout()}))),
+    el('div', {class:'wrap'},
+      el('div', {class:'notice'}, el('b', {text:'이니셜만 입력하세요. '}),
+        '실명·전화번호·주민번호와 건강·가정사·징계 등 민감 내용은 적지 않습니다. 사실 위주로 짧게 요약하세요. 10분간 사용이 없으면 자동 로그아웃됩니다.'),
+      tabs, body));
+}
+
+function rowForFollow(c){
+  const s = staffById(c.staff_id), today = todayStr();
+  const late = c.follow_due && c.follow_due < today;
+  const chk = el('input', {type:'checkbox', 'aria-label':'이행 완료', onchange: async (e) => { await toggleFollow(c, e.target.checked); }});
+  return el('div', {class:'rowitem'}, chk,
+    el('div', {class:'grow click', style:'cursor:pointer', onclick: () => openStaff(c.staff_id)},
+      el('div', {class:'t'}, el('span', {class:'badge'}, s ? s.initials : '?'), c.follow_up),
+      el('div', {class:'s'}, `상담 ${fmtD(c.counsel_date)}${c.follow_due ? ` · 기한 ${fmtD(c.follow_due)}` : ''}`)),
+    late ? el('span', {class:'badge red', text:'기한 지남'}) : null);
+}
+function viewDash(){
+  const m = summary();
+  const stat = (n, l, cls) => el('div', {class:'stat ' + (cls || '')}, el('div', {class:'n', text:String(n)}), el('div', {class:'l', text:l}));
+  const gapRow = (i) => el('div', {class:'rowitem click', onclick: () => openStaff(i.s.id)}, el('div', {class:'ava', text:i.s.initials}),
+    el('div', {class:'grow'}, el('div', {class:'t', text: i.s.rank_title || '직급 미입력'}),
+      el('div', {class:'s', text: i.gap == null ? '상담 기록 없음' : `마지막 상담 ${fmtD(i.last.counsel_date)} (${i.gap}일 전)`})),
+    el('span', {class:'badge amber', text: i.gap == null ? '첫 상담 필요' : '상담 공백'}));
+  const soonRow = (i) => { const d = dayDiff(i.next, m.today);
+    return el('div', {class:'rowitem click', onclick: () => openStaff(i.s.id)}, el('div', {class:'ava', text:i.s.initials}),
+      el('div', {class:'grow'}, el('div', {class:'t', text:`예정일 ${fmtD(i.next)}`}), el('div', {class:'s', text: i.s.rank_title || ''})),
+      el('span', {class:'badge ' + (d < 0 ? 'red' : 'amber'), text: d < 0 ? `${-d}일 지남` : d === 0 ? '오늘' : `D-${d}`})); };
+  return el('div', {},
+    el('div', {class:'stats'},
+      stat(m.active.length, '재직 직원'),
+      stat(m.open.length, '미이행 후속 조치', m.open.length ? 'warn' : ''),
+      stat(m.soon.length, '상담 예정(7일 내·지연)', m.soon.length ? 'warn' : ''),
+      stat(m.gapList.length, `상담 공백(${GAP_DAYS}일↑·없음)`, m.gapList.length ? 'red' : '')),
+    el('div', {class:'card'}, el('h2', {text:'후속 조치 체크리스트'}), el('p', {class:'desc', text:'상담에서 약속한 조치입니다. 이행하면 체크하세요.'}),
+      m.open.length ? el('div', {class:'list'}, m.open.map(rowForFollow)) : el('div', {class:'empty', text:'미이행 후속 조치가 없습니다.'})),
+    el('div', {class:'card'}, el('h2', {text:'상담 예정 · 지연'}), el('p', {class:'desc', text:'다음 상담 예정일이 7일 이내이거나 지난 직원입니다.'}),
+      m.soon.length ? el('div', {class:'list'}, m.soon.map(soonRow)) : el('div', {class:'empty', text:'예정된 상담이 없습니다.'})),
+    el('div', {class:'card'}, el('h2', {text:'상담 공백 직원'}), el('p', {class:'desc', text:`마지막 상담이 ${GAP_DAYS}일을 넘었거나 아직 기록이 없는 직원입니다.`}),
+      m.gapList.length ? el('div', {class:'list'}, m.gapList.map(gapRow)) : el('div', {class:'empty', text:'모든 직원이 최근에 상담했습니다.'})));
+}
+
+function staffForm(s){
+  const isNew = !s;
+  const f = {
+    initials: el('input', {type:'text', maxlength:6, value: s ? s.initials : '', placeholder:'예: SAS 또는 ㅅㅇㅅ', autocomplete:'off'}),
+    rank: el('input', {type:'text', maxlength:20, value: s && s.rank_title || '', placeholder:'예: 과장'}),
+    duties: el('input', {type:'text', maxlength:60, value: s && s.duties || '', placeholder:'예: 기업여신 담당'}),
+    joined: el('input', {type:'date', value: s && s.joined_on || ''}),
+    memo: el('textarea', {maxlength:200, style:'min-height:64px', placeholder:'업무 특이사항 등 (민감 내용 제외)'}),
+    active: el('input', {type:'checkbox'})
+  };
+  f.memo.value = s && s.memo || ''; f.active.checked = s ? s.active : true;
+  const msg = el('div', {class:'hint', style:'min-height:18px;'});
+  let warned = false;
+  const save = async (btn) => {
+    msg.className = 'hint'; msg.textContent = '';
+    const ini = f.initials.value.trim();
+    if (!/^[A-Za-z0-9ㄱ-ㅎ]{1,6}$/.test(ini)){ msg.className = 'hint err'; msg.textContent = '이니셜은 영문·숫자 또는 자음(ㅅㅇㅅ) 1~6자만 가능합니다. 실명(한글)은 입력할 수 없습니다.'; return; }
+    if (S.staff.some(x => x.initials.toLowerCase() === ini.toLowerCase() && (!s || x.id !== s.id))){ msg.className = 'hint err'; msg.textContent = '이미 같은 이니셜이 있습니다. 구분되게 바꿔 주세요. (예: SAS2)'; return; }
+    const sc = scan(f.rank.value, f.duties.value, f.memo.value);
+    if (sc.block.length){ msg.className = 'hint err'; msg.textContent = `입력할 수 없는 정보가 있습니다: ${sc.block.join(', ')}`; return; }
+    if (sc.warn.length && !warned){ warned = true; msg.className = 'hint warn'; msg.textContent = `민감할 수 있는 표현(${sc.warn.join(', ')})이 있습니다. 꼭 필요한 경우만 남기고, 저장하려면 한 번 더 누르세요.`; return; }
+    const body = { initials: ini, rank_title: f.rank.value.trim() || null, duties: f.duties.value.trim() || null,
+                   joined_on: f.joined.value || null, memo: f.memo.value.trim() || null, active: f.active.checked };
+    btn.disabled = true;
+    try{
+      const res = isNew ? await api('/rest/v1/staff_members', { method:'POST', headers:{Prefer:'return=representation'}, body })
+                        : await api('/rest/v1/staff_members?id=eq.' + s.id, { method:'PATCH', headers:{Prefer:'return=representation'}, body });
+      if (!res.ok){ toast(await errMsg(res, '저장하지 못했습니다.'), 'err'); return; }
+      const row = (await res.json())[0];
+      if (isNew) S.staff.push(row); else Object.assign(s, row);
+      toast('저장했습니다.'); S.editStaff = false;
+      if (isNew){ S.view = 'staff'; } render();
+    } finally { btn.disabled = false; }
+  };
+  const saveBtn = el('button', {class:'btn primary', type:'button', text:'저장', onclick: () => save(saveBtn)});
+  return el('div', {class:'card'}, el('h2', {text: isNew ? '직원 추가' : '직원 정보 수정'}),
+    el('p', {class:'desc', text:'실명 대신 이니셜만 사용합니다.'}),
+    el('div', {class:'row2'},
+      el('div', {class:'field'}, el('label', {}, '이니셜 ', el('span', {class:'req', text:'*'})), f.initials),
+      el('div', {class:'field'}, el('label', {}, '직급 ', el('span', {class:'opt', text:'(선택)'})), f.rank)),
+    el('div', {class:'row2'},
+      el('div', {class:'field'}, el('label', {}, '담당 업무 ', el('span', {class:'opt', text:'(선택)'})), f.duties),
+      el('div', {class:'field'}, el('label', {}, '부임일 ', el('span', {class:'opt', text:'(선택)'})), f.joined)),
+    el('div', {class:'field'}, el('label', {}, '메모 ', el('span', {class:'opt', text:'(선택, 200자)'})), f.memo),
+    el('label', {class:'inline', style:'margin-bottom:10px;'}, f.active, '재직 중 (해제하면 대시보드에서 제외)'),
+    msg, el('div', {class:'actions'}, saveBtn,
+      el('button', {class:'btn', type:'button', text:'취소', onclick: () => { S.editStaff = false; if (isNew) S.view = 'staff'; render(); }}),
+      !isNew ? confirmButton('직원 삭제', '정말 삭제 (상담 이력도 함께 삭제)', async () => {
+        const res = await api('/rest/v1/staff_members?id=eq.' + s.id, { method:'DELETE' });
+        if (!res.ok){ toast(await errMsg(res, '삭제하지 못했습니다.'), 'err'); return; }
+        S.staff = S.staff.filter(x => x.id !== s.id); S.counsels = S.counsels.filter(c => c.staff_id !== s.id);
+        S.view = 'staff'; S.sel = null; S.editStaff = false; toast('삭제했습니다.'); render();
+      }) : null));
+}
+
+function viewStaff(){
+  if (S.editStaff) return staffForm(null);
+  const today = todayStr();
+  const list = S.staff.filter(s => S.showInactive || s.active);
+  const rows = list.map(s => {
+    const cs = countsOf(s.id), last = cs[0];
+    return el('div', {class:'rowitem click' + (s.active ? '' : ' dim'), onclick: () => openStaff(s.id)},
+      el('div', {class:'ava', text:s.initials}),
+      el('div', {class:'grow'}, el('div', {class:'t'}, [s.rank_title, s.duties].filter(Boolean).join(' · ') || '(정보 없음)'),
+        el('div', {class:'s', text: last ? `마지막 상담 ${fmtD(last.counsel_date)} (${dayDiff(today, last.counsel_date)}일 전) · 총 ${cs.length}회` : '상담 기록 없음'})),
+      s.active ? null : el('span', {class:'badge gray', text:'비재직'}));
+  });
+  return el('div', {},
+    el('div', {class:'card'}, el('h2', {text:'직원 목록'}), el('p', {class:'desc', text:'이니셜을 눌러 상담 이력을 확인·추가합니다.'}),
+      rows.length ? el('div', {class:'list'}, rows) : el('div', {class:'empty', text:'등록된 직원이 없습니다. 아래 버튼으로 추가하세요.'}),
+      el('div', {class:'actions', style:'margin-top:12px;'},
+        el('button', {class:'btn primary', type:'button', text:'+ 직원 추가', onclick: () => { S.editStaff = true; render(); }}),
+        el('label', {class:'inline'}, el('input', {type:'checkbox', checked: S.showInactive, onchange: (e) => { S.showInactive = e.target.checked; render(); }}), '비재직 포함'))));
+}
+function openStaff(id){ S.sel = id; S.view = 'detail'; S.editStaff = false; S.editCounsel = null; render(); window.scrollTo(0, 0); }
+
+async function toggleFollow(c, done){
+  const res = await api('/rest/v1/staff_counsels?id=eq.' + c.id, { method:'PATCH', headers:{Prefer:'return=representation'}, body:{ follow_done: done } });
+  if (!res.ok){ toast(await errMsg(res, '저장하지 못했습니다.'), 'err'); render(); return; }
+  c.follow_done = done; toast(done ? '이행 완료로 표시했습니다.' : '미이행으로 되돌렸습니다.'); render();
+}
+
+function counselForm(s, c){
+  const isNew = !c;
+  const f = {
+    date: el('input', {type:'date', value: c ? c.counsel_date : todayStr()}),
+    kind: el('select', {}, KINDS.map(k => el('option', {value:k, text:k}))),
+    sum: el('textarea', {maxlength:500, placeholder:'사실 위주로 2~3줄 (500자 이내)'}),
+    fu: el('input', {type:'text', maxlength:200, value: c && c.follow_up || '', placeholder:'예: 6월 내 여신 교육 신청 지원'}),
+    due: el('input', {type:'date', value: c && c.follow_due || ''}),
+    next: el('input', {type:'date', value: c && c.next_date || ''})
+  };
+  f.kind.value = c ? c.kind : '업무'; f.sum.value = c ? c.summary : '';
+  const cnt = el('span', {class:'hint', text:`${f.sum.value.length}/500`});
+  f.sum.addEventListener('input', () => { cnt.textContent = `${f.sum.value.length}/500`; });
+  const msg = el('div', {class:'hint', style:'min-height:18px;'});
+  let warned = false;
+  const save = async (btn) => {
+    msg.className = 'hint'; msg.textContent = '';
+    if (!f.date.value){ msg.className = 'hint err'; msg.textContent = '상담일을 입력하세요.'; return; }
+    if (!f.sum.value.trim()){ msg.className = 'hint err'; msg.textContent = '상담 요약을 입력하세요.'; return; }
+    if (f.due.value && !f.fu.value.trim()){ msg.className = 'hint err'; msg.textContent = '후속 조치 내용을 입력하거나 기한을 지워 주세요.'; return; }
+    const sc = scan(f.sum.value, f.fu.value);
+    if (sc.block.length){ msg.className = 'hint err'; msg.textContent = `입력할 수 없는 정보가 있습니다: ${sc.block.join(', ')}`; return; }
+    if (sc.warn.length && !warned){ warned = true; msg.className = 'hint warn';
+      msg.textContent = `민감할 수 있는 표현(${sc.warn.join(', ')})이 있습니다. 구체 내용은 빼고 "개인 사정 상담" 정도로 적는 것을 권합니다. 그대로 저장하려면 한 번 더 누르세요.`; return; }
+    const fu = f.fu.value.trim();
+    const body = { staff_id: s.id, counsel_date: f.date.value, kind: f.kind.value, summary: f.sum.value.trim(),
+                   follow_up: fu || null, follow_due: fu && f.due.value ? f.due.value : null, next_date: f.next.value || null };
+    if (!fu) body.follow_done = false;
+    btn.disabled = true;
+    try{
+      const res = isNew ? await api('/rest/v1/staff_counsels', { method:'POST', headers:{Prefer:'return=representation'}, body })
+                        : await api('/rest/v1/staff_counsels?id=eq.' + c.id, { method:'PATCH', headers:{Prefer:'return=representation'}, body });
+      if (!res.ok){ toast(await errMsg(res, '저장하지 못했습니다.'), 'err'); return; }
+      const row = (await res.json())[0];
+      if (isNew) S.counsels.push(row); else Object.assign(c, row);
+      S.counsels.sort((a, b) => b.counsel_date.localeCompare(a.counsel_date) || (b.created_at || '').localeCompare(a.created_at || ''));
+      S.editCounsel = null; toast('저장했습니다.'); render();
+    } finally { btn.disabled = false; }
+  };
+  const saveBtn = el('button', {class:'btn primary', type:'button', text: isNew ? '상담 기록 저장' : '수정 저장', onclick: () => save(saveBtn)});
+  return el('div', {class:'card', id:'counselForm'}, el('h2', {text: isNew ? '상담 기록 추가' : '상담 기록 수정'}),
+    el('div', {class:'row2'},
+      el('div', {class:'field'}, el('label', {}, '상담일 ', el('span', {class:'req', text:'*'})), f.date),
+      el('div', {class:'field'}, el('label', {}, '유형 ', el('span', {class:'req', text:'*'})), f.kind)),
+    el('div', {class:'field'}, el('label', {}, '상담 요약 ', el('span', {class:'req', text:'*'})), f.sum, cnt),
+    el('div', {class:'row2'},
+      el('div', {class:'field'}, el('label', {}, '후속 조치 ', el('span', {class:'opt', text:'(선택)'})), f.fu),
+      el('div', {class:'field'}, el('label', {}, '조치 기한 ', el('span', {class:'opt', text:'(선택)'})), f.due)),
+    el('div', {class:'field', style:'max-width:300px;'}, el('label', {}, '다음 상담 예정일 ', el('span', {class:'opt', text:'(선택)'})), f.next),
+    msg, el('div', {class:'actions'}, saveBtn,
+      !isNew ? el('button', {class:'btn', type:'button', text:'취소', onclick: () => { S.editCounsel = null; render(); }}) : null));
+}
+
+function viewDetail(){
+  const s = staffById(S.sel);
+  if (!s){ S.view = 'staff'; return viewStaff(); }
+  if (S.editStaff) return staffForm(s);
+  const cs = countsOf(s.id), today = todayStr();
+  const editing = S.editCounsel ? cs.find(c => c.id === S.editCounsel) : null;
+  const items = cs.map(c => {
+    const late = c.follow_up && !c.follow_done && c.follow_due && c.follow_due < today;
+    return el('div', {class:'tli'},
+      el('div', {class:'d'}, el('span', {class:'badge', text:c.kind}), fmtD(c.counsel_date)),
+      el('div', {class:'sm-text', text:c.summary}),
+      c.follow_up ? el('div', {class:'fu' + (c.follow_done ? ' done' : '')},
+        el('input', {type:'checkbox', checked: c.follow_done, 'aria-label':'이행 완료', onchange: (e) => toggleFollow(c, e.target.checked)}),
+        el('span', {class:'ft', text:`후속: ${c.follow_up}${c.follow_due ? ` (기한 ${fmtD(c.follow_due)})` : ''}`}),
+        late ? el('span', {class:'badge red', text:'기한 지남'}) : null) : null,
+      c.next_date ? el('div', {class:'s', style:'font-size:12.5px;color:var(--ink-soft);margin-top:3px;', text:`다음 상담 예정 ${fmtD(c.next_date)}`}) : null,
+      el('div', {class:'actions', style:'margin-top:6px;'},
+        el('button', {class:'btn sm', type:'button', text:'수정', onclick: () => { S.editCounsel = c.id; render(); document.getElementById('counselForm')?.scrollIntoView({block:'center'}); }}),
+        confirmButton('삭제', '정말 삭제', async () => {
+          const res = await api('/rest/v1/staff_counsels?id=eq.' + c.id, { method:'DELETE' });
+          if (!res.ok){ toast(await errMsg(res, '삭제하지 못했습니다.'), 'err'); return; }
+          S.counsels = S.counsels.filter(x => x.id !== c.id); toast('삭제했습니다.'); render();
+        })));
+  });
+  return el('div', {},
+    el('button', {class:'back', type:'button', text:'← 직원 목록', onclick: () => { S.view = 'staff'; S.sel = null; S.editCounsel = null; render(); }}),
+    el('div', {class:'card'},
+      el('div', {class:'rowitem', style:'border:none;padding:0;'}, el('div', {class:'ava', text:s.initials}),
+        el('div', {class:'grow'}, el('div', {class:'t', text:[s.rank_title, s.duties].filter(Boolean).join(' · ') || '(정보 없음)'}),
+          el('div', {class:'s', text:[s.joined_on ? `부임 ${fmtD(s.joined_on)}` : '', `상담 ${cs.length}회`, s.active ? '' : '비재직'].filter(Boolean).join(' · ')})),
+        el('button', {class:'btn sm', type:'button', text:'정보 수정', onclick: () => { S.editStaff = true; render(); }})),
+      s.memo ? el('div', {class:'hint', style:'margin-top:8px;', text:`메모: ${s.memo}`}) : null),
+    counselForm(s, editing),
+    el('div', {class:'card'}, el('h2', {text:'상담 이력'}),
+      cs.length ? el('div', {class:'tl', style:'margin-top:12px;'}, items) : el('div', {class:'empty', text:'아직 상담 기록이 없습니다.'})));
+}
+
+/* ---------- 시작 ---------- */
+(async function init(){
+  if (session){ if (!(await start())) return; } else renderLogin();
+})();
+</script>
+</body>
+</html>
