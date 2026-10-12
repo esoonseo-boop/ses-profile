@@ -369,13 +369,50 @@ async function renderProducts(){
       el('p', {class:'hint', text:'1~2장 분량, 10MB 이하. 파일명은 저장 시 무작위로 바뀝니다.'})),
     btn);
 
-  const list = state.products.length ? el('div', {class:'list'}, state.products.map(p =>
+  /* 상품정보 수정 폼 (행을 인라인으로 대체) */
+  function editForm(p, rowNode){
+    const t = el('input', {type:'text', maxlength:80, required:true, value:p.title});
+    const c = el('input', {type:'text', maxlength:30, value:p.category || ''});
+    const s = el('textarea', {maxlength:300}); s.value = p.summary || '';
+    const save = el('button', {class:'btn primary sm', type:'submit', text:'저장'});
+    const cancel = el('button', {class:'btn sm', type:'button', text:'취소', onclick: () => ed.replaceWith(rowNode)});
+    const ed = el('form', {class:'rowitem editing', style:'flex-direction:column; align-items:stretch; gap:10px;', onsubmit: async (e) => {
+      e.preventDefault();
+      const title = t.value.trim();
+      if (!title){ toast('상품명을 입력해 주세요.', 'err'); return; }
+      save.disabled = cancel.disabled = true; save.textContent = '저장 중…';
+      try{
+        const body = { title, category: c.value.trim() || null, summary: s.value.trim() || null };
+        const r = await api(`/rest/v1/proposal_products?id=eq.${p.id}`, { method:'PATCH', headers:{Prefer:'return=representation'}, body });
+        if (!r.ok) throw new Error(await errMsg(r, '수정에 실패했습니다.'));
+        const rows = await r.json();
+        if (!rows.length) throw new Error('수정 권한이 없거나 이미 삭제된 상품입니다.');
+        toast('상품 정보를 수정했습니다.');
+        renderProducts();
+      }catch(ex){
+        toast(ex.message, 'err');
+        save.disabled = cancel.disabled = false; save.textContent = '저장';
+      }
+    }},
+      el('div', {class:'row2'},
+        el('div', {class:'field', style:'margin:0'}, el('label', {}, '상품명 ', el('span', {class:'req', text:'*'})), t),
+        el('div', {class:'field', style:'margin:0'}, el('label', {}, '분류'), c)),
+      el('div', {class:'field', style:'margin:0'}, el('label', {}, '한 줄 소개'), s),
+      el('div', {class:'acts', style:'justify-content:flex-end'}, cancel, save));
+    return ed;
+  }
+
+  const list = state.products.length ? el('div', {class:'list'}, state.products.map(p => {
+    const row =
     el('div', {class:'rowitem' + (p.active ? '' : ' dim')},
       el('div', {class:'grow'},
         el('div', {class:'t'}, p.category ? el('span', {class:'badge', text:p.category}) : null, p.title),
         el('div', {class:'s', text: `${p.branch_name ? p.branch_name + ' · ' : ''}${p.pages ? 'PDF ' + p.pages + '장 · ' : ''}${p.active ? '사용 중' : '숨김'}`})),
       el('div', {class:'acts'},
         el('a', {class:'btn sm', href: pdfUrl(p.pdf_path), target:'_blank', rel:'noopener', text:'PDF 보기'}),
+        !canEditProduct(p) ? null : el('button', {class:'btn sm', type:'button', text:'수정', onclick: () => {
+          const ed = editForm(p, row); row.replaceWith(ed); ed.querySelector('input').focus();
+        }}),
         !canEditProduct(p) ? null : el('button', {class:'btn sm', type:'button', text: p.active ? '숨김' : '다시 표시', onclick: async () => {
           const r = await api(`/rest/v1/proposal_products?id=eq.${p.id}`, { method:'PATCH', headers:{Prefer:'return=minimal'}, body:{ active: !p.active } });
           if (!r.ok) toast(await errMsg(r, '변경에 실패했습니다.'), 'err'); else renderProducts();
@@ -386,12 +423,13 @@ async function renderProducts(){
           if (!r.ok){ toast(await errMsg(r, '삭제에 실패했습니다.'), 'err'); return; }
           await api(`/storage/v1/object/${BUCKET}/${p.pdf_path}`, { method:'DELETE' });
           toast('삭제했습니다.'); renderProducts();
-        })))
-  )) : el('div', {class:'empty', text:'등록된 상품이 없습니다. 위에서 PDF를 올려 첫 상품을 등록하세요.'});
+        })));
+    return row;
+  })) : el('div', {class:'empty', text:'등록된 상품이 없습니다. 위에서 PDF를 올려 첫 상품을 등록하세요.'});
 
   view.replaceChildren(
     el('div', {class:'card'}, el('h2', {text:'새 상품 등록'}), el('p', {class:'desc', text:`상품별 제안서 PDF를 한 번만 등록해 두면 ${me.branch_name} 직원 모두가 제안서에서 골라 쓸 수 있습니다. (수정·삭제는 등록한 사람과 관리자만)`}), form),
-    el('div', {class:'card'}, el('h2', {text:`등록된 상품 ${state.products.length}개`}), el('p', {class:'desc', text:'“숨김” 처리하면 제안서 만들기 목록에서만 사라지고, 이미 만든 제안서에는 그대로 남습니다.'}), list)
+    el('div', {class:'card'}, el('h2', {text:`등록된 상품 ${state.products.length}개`}), el('p', {class:'desc', text:'“숨김” 처리하면 제안서 만들기 목록에서만 사라지고, 이미 만든 제안서에는 그대로 남습니다. “수정”한 상품명·분류·소개는 이미 보낸 제안서에도 즉시 반영됩니다. (PDF를 바꾸려면 새 상품으로 등록하세요.)'}), list)
   );
 }
 
