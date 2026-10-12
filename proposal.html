@@ -528,7 +528,7 @@ function downloadCurrent(i){
 function updateChrome(){
   const s = V.slides[V.idx], n = V.slides.length;
   if (s.t === 'cover'){
-    vtitle.replaceChildren(el('b', {text:'맞춤 제안서'}), el('span', {text:V.view.customer}));
+    vtitle.replaceChildren();   // 표지에서는 상단 제목(맞춤 제안서/고객명)을 표시하지 않음
   }else{
     const it = V.view.items[s.i];
     vtitle.replaceChildren(el('b', {text:`${pad2(s.i + 1)} · ${it.product.title}`}), el('span', {text:`${s.p} / ${s.pages}쪽`}));
