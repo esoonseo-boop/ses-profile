@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow, noarchive">
 <meta name="referrer" content="no-referrer">
-<title>직원 상담 관리 | IBK기업은행</title>
+<title>지점별 직원 상담 관리 | IBK기업은행</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
@@ -231,14 +231,16 @@ function renderLogin(msg){
   app.replaceChildren(
     el('div', {class:'top'}, el('div', {class:'top-inner'}, el('h1', {text:'직원 상담 관리'}))),
     el('div', {class:'wrap'}, el('div', {class:'card login'}, el('h2', {text:'지점장 로그인'}),
-      el('p', {class:'desc', text:'지점장 계정만 로그인할 수 있습니다. 영업 CRM과 별도의 화면·데이터입니다.'}), form)));
+      el('p', {class:'desc', text:'지점장 계정만 로그인할 수 있으며, 소속 지점의 직원 상담 정보만 볼 수 있습니다. 영업 CRM과 별도의 화면·데이터입니다.'}), form)));
 }
 
 /* ---------- 데이터 로드 ---------- */
 async function loadAll(){
+  // 서버(RLS)가 같은 지점 데이터만 돌려주며, 화면에서도 내 지점으로 한 번 더 제한한다
+  const br = '&branch_name=eq.' + encodeURIComponent(me.branch_name);
   const [a, b] = await Promise.all([
-    api('/rest/v1/staff_members?select=*&order=created_at.asc'),
-    api('/rest/v1/staff_counsels?select=*&order=counsel_date.desc,created_at.desc')
+    api('/rest/v1/staff_members?select=*' + br + '&order=created_at.asc'),
+    api('/rest/v1/staff_counsels?select=*' + br + '&order=counsel_date.desc,created_at.desc')
   ]);
   if (!a.ok || !b.ok){
     const code = a.ok ? b.status : a.status;
@@ -294,12 +296,12 @@ function render(){
         onclick: () => { S.view = k; S.sel = null; S.editStaff = false; S.editCounsel = null; render(); }})));
   const body = S.view === 'dash' ? viewDash() : S.view === 'staff' ? viewStaff() : viewDetail();
   app.replaceChildren(
-    el('div', {class:'top'}, el('div', {class:'top-inner'}, el('h1', {text:'직원 상담 관리'}),
-      el('span', {class:'who', text: me ? `${me.branch_name} ${me.display_name || me.manager_name || ''} 지점장`.replace('  ', ' ') : ''}),
+    el('div', {class:'top'}, el('div', {class:'top-inner'}, el('h1', {text: me ? `${me.branch_name} 직원 상담 관리` : '직원 상담 관리'}),
+      el('span', {class:'who', text: me ? `${me.display_name || me.manager_name || ''} 지점장`.trim() : ''}),
       el('button', {class:'btn sm', type:'button', text:'로그아웃', onclick: () => logout()}))),
     el('div', {class:'wrap'},
       el('div', {class:'notice'}, el('b', {text:'이니셜만 입력하세요. '}),
-        '실명·전화번호·주민번호와 건강·가정사·징계 등 민감 내용은 적지 않습니다. 사실 위주로 짧게 요약하세요. 10분간 사용이 없으면 자동 로그아웃됩니다.'),
+        `실명·전화번호·주민번호와 건강·가정사·징계 등 민감 내용은 적지 않습니다. 사실 위주로 짧게 요약하세요. 이 화면에는 ${me.branch_name} 직원 정보만 표시되며 타 지점은 조회할 수 없습니다. 10분간 사용이 없으면 자동 로그아웃됩니다.`),
       tabs, body));
 }
 
@@ -359,7 +361,7 @@ function staffForm(s){
     const sc = scan(f.rank.value, f.duties.value, f.memo.value);
     if (sc.block.length){ msg.className = 'hint err'; msg.textContent = `입력할 수 없는 정보가 있습니다: ${sc.block.join(', ')}`; return; }
     if (sc.warn.length && !warned){ warned = true; msg.className = 'hint warn'; msg.textContent = `민감할 수 있는 표현(${sc.warn.join(', ')})이 있습니다. 꼭 필요한 경우만 남기고, 저장하려면 한 번 더 누르세요.`; return; }
-    const body = { initials: ini, rank_title: f.rank.value.trim() || null, duties: f.duties.value.trim() || null,
+    const body = { branch_name: me.branch_name, initials: ini, rank_title: f.rank.value.trim() || null, duties: f.duties.value.trim() || null,
                    joined_on: f.joined.value || null, memo: f.memo.value.trim() || null, active: f.active.checked };
     btn.disabled = true;
     try{
@@ -445,7 +447,7 @@ function counselForm(s, c){
     if (sc.warn.length && !warned){ warned = true; msg.className = 'hint warn';
       msg.textContent = `민감할 수 있는 표현(${sc.warn.join(', ')})이 있습니다. 구체 내용은 빼고 "개인 사정 상담" 정도로 적는 것을 권합니다. 그대로 저장하려면 한 번 더 누르세요.`; return; }
     const fu = f.fu.value.trim();
-    const body = { staff_id: s.id, counsel_date: f.date.value, kind: f.kind.value, summary: f.sum.value.trim(),
+    const body = { branch_name: me.branch_name, staff_id: s.id, counsel_date: f.date.value, kind: f.kind.value, summary: f.sum.value.trim(),
                    follow_up: fu || null, follow_due: fu && f.due.value ? f.due.value : null, next_date: f.next.value || null };
     if (!fu) body.follow_done = false;
     btn.disabled = true;
