@@ -195,6 +195,8 @@ async function api(path, opts){
 async function errMsg(res, fb){ try{ const j = await res.json(); return j.message || j.error_description || fb; }catch(e){ return fb; } }
 
 /* ---------- 상태 ---------- */
+let me = null;    // 로그인한 지점장 정보 (승인 목록의 내 행)
+const MANAGER_ROLES = ['owner','branch_admin'];   // 지점장 역할 (직원 staff는 제외)
 const S = { staff: [], counsels: [], view:'dash', sel:null, editStaff:false, editCounsel:null, showInactive:false };
 let idleTimer = null;
 function armIdle(){
@@ -205,7 +207,7 @@ function armIdle(){
 ['pointerdown','keydown','touchstart'].forEach(ev => window.addEventListener(ev, armIdle, {passive:true}));
 function logout(msg){
   saveSession(null); clearTimeout(idleTimer);
-  S.staff = []; S.counsels = []; S.sel = null; S.view = 'dash'; S.editStaff = false; S.editCounsel = null;   // 메모리의 데이터도 비움
+  me = null; S.staff = []; S.counsels = []; S.sel = null; S.view = 'dash'; S.editStaff = false; S.editCounsel = null;   // 메모리의 데이터도 비움
   renderLogin(msg);
 }
 
@@ -229,7 +231,7 @@ function renderLogin(msg){
   app.replaceChildren(
     el('div', {class:'top'}, el('div', {class:'top-inner'}, el('h1', {text:'직원 상담 관리'}))),
     el('div', {class:'wrap'}, el('div', {class:'card login'}, el('h2', {text:'지점장 로그인'}),
-      el('p', {class:'desc', text:'지점장 계정만 사용할 수 있습니다. 영업 CRM과 별도의 화면·데이터입니다.'}), form)));
+      el('p', {class:'desc', text:'지점장 계정만 로그인할 수 있습니다. 영업 CRM과 별도의 화면·데이터입니다.'}), form)));
 }
 
 /* ---------- 데이터 로드 ---------- */
@@ -246,8 +248,17 @@ async function loadAll(){
   }
   S.staff = await a.json(); S.counsels = await b.json(); return 'ok';
 }
+async function loadMe(){
+  const res = await api('/rest/v1/proposal_admins?select=email,role,display_name,branch_name,manager_name&email=eq.' + encodeURIComponent((session.email || '').toLowerCase()));
+  if (!res.ok) return null;
+  const row = (await res.json())[0];
+  return row && MANAGER_ROLES.includes(row.role) ? row : null;
+}
 async function start(){
   if (!session){ renderLogin(); return false; }
+  // 지점장 계정인지 먼저 확인 — 직원 계정이면 데이터를 읽기 전에 즉시 로그아웃
+  me = await loadMe();
+  if (!me){ saveSession(null); renderLogin('지점장 계정만 사용할 수 있습니다.'); return false; }
   const r = await loadAll();
   if (r === 'noauth'){ saveSession(null); renderLogin('이 계정은 직원 상담 관리 권한이 없습니다.'); return false; }
   if (r === 'notable'){ saveSession(null); renderLogin('DB 설정(staff_notes.sql)이 아직 적용되지 않았습니다.'); return false; }
@@ -284,7 +295,7 @@ function render(){
   const body = S.view === 'dash' ? viewDash() : S.view === 'staff' ? viewStaff() : viewDetail();
   app.replaceChildren(
     el('div', {class:'top'}, el('div', {class:'top-inner'}, el('h1', {text:'직원 상담 관리'}),
-      el('span', {class:'who', text: session ? session.email : ''}),
+      el('span', {class:'who', text: me ? `${me.branch_name} ${me.display_name || me.manager_name || ''} 지점장`.replace('  ', ' ') : ''}),
       el('button', {class:'btn sm', type:'button', text:'로그아웃', onclick: () => logout()}))),
     el('div', {class:'wrap'},
       el('div', {class:'notice'}, el('b', {text:'이니셜만 입력하세요. '}),
