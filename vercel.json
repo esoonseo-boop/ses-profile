@@ -1,9 +1,20 @@
 {
   "rewrites": [
-    { "source": "/s", "destination": "/api/services" },
-    { "source": "/p", "destination": "/api/proposal" }
+    {
+      "source": "/s",
+      "destination": "/api/services"
+    },
+    {
+      "source": "/p",
+      "destination": "/api/proposal"
+    }
   ],
   "functions": {
-    "api/proposal.js": { "includeFiles": "{proposal.html,proposals/data.json}" }
-  }
+    "api/proposal.js": {
+      "includeFiles": "{proposal.html,proposals/data.json}"
+    }
+  },
+  "regions": [
+    "syd1"
+  ]
 }

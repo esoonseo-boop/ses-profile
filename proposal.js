@@ -21,7 +21,7 @@ async function lookup(code) {
     if (r.ok) {
       const d = await r.json();
       if (d) return { customer: d.customer, branch: d.branch_name, manager: d.manager_name,
-                      titles: (d.items || []).map(i => i.title).filter(Boolean) };
+                      titles: (d.items || []).map(i => i.title).filter(Boolean), raw: d };
     }
   } catch (e) { /* 아래 샘플 확인으로 */ }
   try {
@@ -39,6 +39,7 @@ module.exports = async (req, res) => {
     let html = fs.readFileSync(path.join(process.cwd(), 'proposal.html'), 'utf-8');
 
     let title = '맞춤 제안서 | IBK기업은행';
+    let embed = '';
     let desc = 'IBK기업은행이 준비한 맞춤 제안서입니다.';
     if (code) {
       const info = await lookup(code);
@@ -47,14 +48,19 @@ module.exports = async (req, res) => {
         const list = t.length ? `${t[0]}${t.length > 1 ? ` 외 ${t.length - 1}건` : ''}` : '';
         title = `${info.customer} 고객님께 드리는 맞춤 제안서`;
         desc = `IBK기업은행 ${info.branch} ${info.manager} 지점장이 준비한 맞춤 제안서입니다.${list ? ` (${list})` : ''}`;
+        // 같은 조회 결과를 HTML에 실어 보내 브라우저가 DB를 다시 부르지 않게 함(첫 화면 지연 단축)
+        if (info.raw) {
+          const json = JSON.stringify(info.raw).replace(/</g, '\\u003c').replace(/\u2028/g, '\\u2028').replace(/\u2029/g, '\\u2029');
+          embed = `<script>window.__PROPOSAL__=${json};</script>\n`;
+        }
       }
     }
     const url = `${SITE}/p${code ? `?code=${encodeURIComponent(code)}` : ''}`;
     const T = esc(title), D = esc(desc);
 
     // 카카오톡·문자 등 링크 미리보기가 읽는 title / og 태그를 고객별로 서버에서 미리 바꿔 내려줌
-    html = html.replace(/<title>[\s\S]*?<\/title>/, `<title>${T}</title>`);
-    html = html.replace('</head>', [
+    html = html.replace(/<title>[\s\S]*?<\/title>/, () => `<title>${T}</title>`);   // 함수 형태: 치환문자열의 $ 패턴 방지
+    const headTags = embed + [
       `<meta property="og:title" content="${T}">`,
       `<meta property="og:description" content="${D}">`,
       `<meta property="og:type" content="website">`,
@@ -63,10 +69,11 @@ module.exports = async (req, res) => {
       `<meta name="twitter:card" content="summary">`,
       `<meta name="twitter:title" content="${T}">`,
       `<meta name="twitter:description" content="${D}">`
-    ].join('\n') + '\n</head>');
+    ].join('\n') + '\n</head>';
+    html = html.replace('</head>', () => headTags);
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300');
+    res.setHeader('Cache-Control', 'no-store');   // 조회수·유효기간·상품 수정이 바로 반영되도록 캐시하지 않음
     res.status(200).send(html);
   } catch (err) {
     res.status(500).send('페이지를 불러오는 중 오류가 발생했습니다.');

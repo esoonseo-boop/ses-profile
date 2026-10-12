@@ -5,10 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <title>맞춤 제안서 | IBK기업은행</title>
+<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+<link rel="preconnect" href="https://oqeiaaworcarixndtomj.supabase.co" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="preload" href="/ci.png" as="image">
+<!-- 글꼴 CSS는 화면 표시를 막지 않도록 비동기로 불러옴 -->
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css"></noscript>
 <style>
   :root{
     --bg:#FCFCFE; --ink:#1E293B; --ink-strong:#0F172A; --ink-soft:#64748B;
@@ -442,22 +447,47 @@ async function downloadAll(btn){
 /* =====================================================================
    한 장씩 보는 뷰어: 표지 → 상품별 제안서(쪽 단위) , 다운로드 버튼
    ===================================================================== */
-const V = { view:null, docs:[], slides:[], idx:0, zoom:false, token:0, task:null, ready:false, pageCache:new Map(), drawer:null };
+const V = { view:null, docs:[], docP:[], failed:[], slides:[], idx:0, zoom:false, token:0, task:null, ready:false, pageCache:new Map(), drawer:null };
 let stage, vtitle, vprogText, vprogBar, btnPrev, btnNext, btnZoom, btnDown, coverEl;
 
 function buildSlides(){
   const s = [{ t:'cover' }];
   V.view.items.forEach((it, i) => {
     const d = V.docs[i];
-    const n = d ? d.numPages : 1;            // 불러오기 실패한 상품도 안내용 1쪽을 둠
-    for (let p = 1; p <= n; p++) s.push({ t:'pdf', i, p, pages:n, failed:!d });
+    // 쪽수: 실제 PDF → 등록 시 저장된 쪽수 → (불러오기 실패·정보 없음) 안내용 1쪽
+    const n = d ? d.numPages : (V.failed[i] ? 1 : (it.product.pages || 1));
+    for (let p = 1; p <= n; p++) s.push({ t:'pdf', i, p, pages:n, failed:!!V.failed[i] });
   });
   V.slides = s;
 }
 
+/* PDF는 필요할 때 처음 열고(캐시), 쪽수가 달라졌으면 슬라이드 목록만 조용히 갱신 */
+function ensureDoc(i){
+  if (!V.docP[i]){
+    V.docP[i] = window.pdfjsLib.getDocument({ url:V.view.items[i].product.url, disableRange:true }).promise   // 구간 요청은 CDN 캐시를 우회해 오히려 느리므로 통째로 받음
+      .then(d => { V.docs[i] = d; return d; })
+      .catch(() => { V.failed[i] = true; V.docs[i] = null; return null; });
+  }
+  return V.docP[i];
+}
+function refreshSlides(){
+  const cur = V.slides[V.idx], before = JSON.stringify(V.slides);
+  buildSlides();
+  if (JSON.stringify(V.slides) === before) return false;
+  if (!cur || cur.t === 'cover') V.idx = 0;
+  else{
+    const cnt = V.slides.filter(x => x.t === 'pdf' && x.i === cur.i).length;
+    const k = V.slides.findIndex(x => x.t === 'pdf' && x.i === cur.i && x.p === Math.min(cur.p, cnt));
+    V.idx = k >= 0 ? k : 0;
+  }
+  updateChrome();
+  const now = V.slides[V.idx];
+  return !!now && (now.t !== cur.t || now.i !== cur.i || now.p !== cur.p);   // 화면에 보이는 쪽이 바뀌었는지
+}
+
 function buildViewer(view){
   V.view = view; V.idx = 0; V.zoom = false; V.ready = false; V.slides = [{ t:'cover' }];
-  V.docs = view.items.map(() => null); V.pageCache.clear();
+  V.docs = view.items.map(() => null); V.docP = []; V.failed = []; V.pageCache.clear();
   document.body.classList.add('viewing');
 
   btnPrev = el('button', {class:'vbtn', type:'button', text:'◀', 'aria-label':'이전', onclick: () => go(V.idx - 1)});
@@ -487,16 +517,24 @@ function buildViewer(view){
 
   let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { if (V.slides[V.idx] && V.slides[V.idx].t === 'pdf') drawCurrent(); }, 150); });
 
+  // 등록된 쪽수가 있으면 PDF를 기다리지 않고 바로 열람 가능. 쪽수 정보가 없는 상품만 먼저 열어 확인
+  const unknown = view.items.map((it, i) => it.product.pages > 0 ? null : ensureDoc(i)).filter(Boolean);
+  if (!unknown.length){ buildSlides(); V.ready = true; }
   renderCurrent(0);
-
-  // 모든 상품 PDF의 쪽수를 먼저 읽어 와 슬라이드 목록을 확정
-  Promise.all(view.items.map((it, i) =>
-    window.pdfjsLib.getDocument(it.product.url).promise.then(d => { V.docs[i] = d; }).catch(() => { V.docs[i] = null; })
-  )).then(() => {
+  if (unknown.length) Promise.all(unknown).then(() => {
     buildSlides(); V.ready = true;
     if (V.idx === 0) renderCurrent(0);
     updateChrome();
   });
+
+  // 뒤에서 상품 PDF를 순서대로 미리 열어 둠(첫 상품부터)
+  (async () => {
+    for (let i = 0; i < view.items.length; i++){
+      if (V.view !== view) return;
+      await ensureDoc(i);
+      if (V.ready && refreshSlides()) renderCurrent(0, true);
+    }
+  })();
 }
 
 document.addEventListener('keydown', (e) => {
@@ -573,7 +611,15 @@ async function drawCurrent(){
   const scroller = box.querySelector('.scroller');
   const it = V.view.items[s.i];
 
-  if (!V.docs[s.i]){
+  if (!V.docs[s.i] && !V.failed[s.i]){
+    scroller.replaceChildren(el('div', {class:'msg', text:'불러오는 중…'}));
+    await ensureDoc(s.i);
+    if (token !== V.token) return;
+    refreshSlides();
+    renderCurrent(0, true);          // 실제 쪽수/실패 여부를 반영해 다시 그림(문서는 이미 열려 있음)
+    return;
+  }
+  if (V.failed[s.i]){
     box.replaceChildren(el('div', {class:'msg'}, '이 상품의 PDF를 불러오지 못했습니다.', el('br'),
       el('a', {href:it.product.url, target:'_blank', rel:'noopener', text:'새 창에서 열기'})));
     return;
@@ -597,6 +643,9 @@ async function drawCurrent(){
     const task = page.render({ canvasContext: canvas.getContext('2d'), viewport: vp });
     V.task = task;
     await task.promise;
+    // 다음 쪽을 미리 받아 둠(넘길 때 대기 시간 최소화)
+    const nx = V.slides[V.idx + 1];
+    if (nx && nx.t === 'pdf') ensureDoc(nx.i).then(d => { if (d && nx.p <= d.numPages) getPage(nx.i, nx.p).catch(() => {}); });
   }catch(e){
     if (e && e.name === 'RenderingCancelledException') return;
     if (token === V.token) box.replaceChildren(el('div', {class:'msg', text:'페이지를 표시하지 못했습니다. PDF 받기를 이용해 주세요.'}));
@@ -719,16 +768,21 @@ async function showProposal(view){
   }
   const showExpired = (b) => showState('⏱️', '제안서 유효기간이 지났습니다', `담당자(${b.name} ${b.manager} 지점장, ${b.tel})에게 문의해 주세요.`);
 
-  /* 1) DB(Supabase)에서 코드로 1건 조회 — 실제 고객 제안서 */
+  loadPdfJs().catch(() => {});   // 제안서 조회와 동시에 PDF 엔진을 미리 내려받음
+
+  /* 1) 서버가 HTML에 실어 보낸 제안서 데이터(window.__PROPOSAL__)를 우선 사용, 없으면 DB(Supabase)에서 코드로 1건 조회 */
   let rpcFailed = false;
   try{
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_proposal_by_code`, {
-      method:'POST',
-      headers:{ apikey:SUPABASE_KEY, Authorization:`Bearer ${SUPABASE_KEY}`, 'Content-Type':'application/json' },
-      body: JSON.stringify({ p_code: code })
-    });
-    if (!res.ok) throw new Error(res.status);
-    const r = await res.json();
+    let r = window.__PROPOSAL__;
+    if (r === undefined){
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_proposal_by_code`, {
+        method:'POST',
+        headers:{ apikey:SUPABASE_KEY, Authorization:`Bearer ${SUPABASE_KEY}`, 'Content-Type':'application/json' },
+        body: JSON.stringify({ p_code: code })
+      });
+      if (!res.ok) throw new Error(res.status);
+      r = await res.json();
+    }
     if (r){
       const branch = { name:r.branch_name, manager:r.manager_name, tel:r.tel, telExt:r.tel_ext };
       if (r.expired){ showExpired(branch); return; }

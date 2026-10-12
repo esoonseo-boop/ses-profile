@@ -503,6 +503,11 @@ async function renderCreate(){
       }
       lsSet(BRANCH_KEY + ':' + me.email, JSON.stringify({ branch_name:bName.value.trim(), manager_name:bMgr.value.trim(), tel:bTel.value.trim(), tel_ext:bExt.value.trim() }));
       state.createdLink = { url: `${PAGE_URL}?code=${code}`, customer: customer.value.trim() };
+      // 고객이 처음 열 때 빠르도록 미리 한 번 불러 둠: 서버 함수 깨우기(조회수에 집계되지 않음) + 상품 PDF를 CDN 캐시에 올림
+      try{
+        fetch(PAGE_URL, { mode:'no-cors', cache:'no-store' }).catch(() => {});
+        state.chosen.forEach(c => fetch(pdfUrl(c.product.pdf_path), { mode:'no-cors' }).catch(() => {}));
+      }catch(e){}
       state.chosen = [];
       renderCreate();
     }catch(ex){ toast(ex.message, 'err'); }
