@@ -141,8 +141,6 @@
   }
   .cta:hover{background:var(--c-acc-d);}
   .cta:disabled{background:#475569; cursor:wait;}
-  .cta2{width:100%; margin-top:10px; padding:12px; font-size:14.5px; font-weight:700; border-radius:12px; cursor:pointer; color:#fff; background:rgba(255,255,255,.08); border:1.5px solid rgba(255,255,255,.28);}
-  .cta2:hover{background:rgba(255,255,255,.14);} .cta2:disabled{opacity:.6; cursor:wait;}
   .contact{margin-top:20px; font-size:13px; color:#CBD5E1; line-height:1.6;}
   .contact b{color:#fff; font-size:14.5px;}
   .contact a{color:var(--c-soft); font-weight:700;}
@@ -642,7 +640,6 @@ function buildCover(){
     v.greeting ? el('p', {class:'lead', text:v.greeting}) : null,
     el('div', {class:'meta'}, meta),
     toc, cta,
-    el('button', {class:'cta2', type:'button', text:'⬇ 표지 포함 전체 PDF 저장', onclick: (e) => downloadAll(e.currentTarget)}),
     el('div', {class:'contact'}, el('b', {text:`${b.name} ${b.manager} 지점장`}), el('br'),
       '문의 ', el('a', {href:'tel:' + b.tel.replace(/[^0-9]/g, ''), text:telText})),
     swatchRow(),
