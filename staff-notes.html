@@ -554,12 +554,11 @@ const EXTRA = [
   ['career','근무이력(최근→과거)','area',300]
 ];
 function ageOf(d){ const t = new Date(), b = new Date(d); let a = t.getFullYear() - b.getFullYear(); if (t.getMonth() < b.getMonth()) a--; return a; }   // 월 기준 만 나이
-function spanOf(d){   // 오늘까지 경과 기간 (N년 M개월)
+function spanOf(d){   // 오늘까지 경과 기간 (년.월)
   if (!d) return ''; const t = new Date(), b = new Date(d);
   let m = (t.getFullYear() - b.getFullYear()) * 12 + t.getMonth() - b.getMonth() - (t.getDate() < b.getDate() ? 1 : 0);
-  if (m < 0) return '예정'; if (m < 1) return '1개월 미만';
-  const y = Math.floor(m / 12), r = m % 12;
-  return (y ? `${y}년` : '') + (y && r ? ' ' : '') + (r ? `${r}개월` : '');
+  if (m < 0) return '예정';
+  return `${Math.floor(m / 12)}.${m % 12}`;   // 년.월 (예: 18년 1개월 → 18.1)
 }
 const withSpan = (d, label) => d ? `${d} (${label ? label + ' ' : ''}${spanOf(d)})` : null;
 function staffExtra(s){
