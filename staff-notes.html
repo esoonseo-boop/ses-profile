@@ -684,7 +684,7 @@ function viewHistory(){
   const sel = el('select', {}, el('option', {value:'', text:'전체 직원'}),
     S.staff.map(x => el('option', {value:x.id, text:[x.initials, x.name_masked].filter(Boolean).join(' · ') + (x.active ? '' : ' (비재직)')})));
   const typ = el('select', {}, el('option', {value:'', text:'전체 양식'}), Object.entries(FORM_TYPES).map(([v, t]) => el('option', {value:v, text:t})));
-  const q = el('input', {type:'search', placeholder:'내용 검색 (요약·후속 조치·양식 항목)', maxlength:50});
+  const q = el('input', {type:'search', placeholder:'이니셜·이름·내용 검색', maxlength:50});
   sel.value = H.staff; typ.value = H.type; q.value = H.q;
   const cnt = el('div', {class:'hint', style:'margin:8px 0;'});
   const list = el('div', {class:'tl'});
@@ -692,7 +692,7 @@ function viewHistory(){
     H.staff = sel.value; H.type = typ.value; H.q = q.value.trim();
     const kw = H.q.toLowerCase();
     const rows = S.counsels.filter(c => (!H.staff || c.staff_id === H.staff) && (!H.type || (c.form_type || 'hr') === H.type)
-      && (!kw || [c.summary, c.follow_up, c.kind, c.period, ...Object.values(c.form || {})].filter(Boolean).join(' ').toLowerCase().includes(kw)));
+      && (!kw || (() => { const st = staffById(c.staff_id) || {}; return [st.initials, st.name_masked, st.team, st.rank_title, c.summary, c.follow_up, c.kind, c.period, ...Object.values(c.form || {})].filter(Boolean).join(' ').toLowerCase().includes(kw); })()));
     const tot = rows.reduce((a, c) => a + (c.duration_min || 0), 0);
     cnt.textContent = `총 ${rows.length}건` + (rows.length !== S.counsels.length ? ` (전체 ${S.counsels.length}건)` : '') + (tot ? ` · 소요시간 합계 ${fmtMin(tot)}` : '');
     list.replaceChildren(...(rows.length ? rows.map(c => {
@@ -715,7 +715,7 @@ function viewHistory(){
   sel.addEventListener('change', draw); typ.addEventListener('change', draw); q.addEventListener('input', draw);
   draw();
   return el('div', {class:'card'}, el('h2', {text:'상담 이력 전체'}),
-    el('p', {class:'desc', text:'모든 직원의 상담 기록을 최신순으로 봅니다. 직원·양식으로 거르거나 내용을 검색하세요.'}),
+    el('p', {class:'desc', text:'모든 직원의 상담 기록을 최신순으로 봅니다. 직원·양식으로 거르거나 이니셜·이름·내용을 검색하세요.'}),
     el('div', {class:'row3'}, el('div', {class:'field'}, el('label', {text:'직원'}), sel), el('div', {class:'field'}, el('label', {text:'양식'}), typ), el('div', {class:'field'}, el('label', {text:'검색'}), q)),
     cnt, list);
 }
