@@ -591,7 +591,7 @@ function viewStaff(){
     const cs = countsOf(s.id), last = cs[0];
     return el('div', {class:'rowitem click' + (s.active ? '' : ' dim'), onclick: () => openStaff(s.id)},
       el('div', {class:'ava', text:s.initials}),
-      el('div', {class:'grow'}, el('div', {class:'t'}, [s.team, s.rank_title, s.duties].filter(Boolean).join(' · ') || '(정보 없음)'),
+      el('div', {class:'grow'}, el('div', {class:'t'}, [s.name_masked, s.team, s.rank_title, s.duties].filter(Boolean).join(' · ') || '(정보 없음)'),
         el('div', {class:'s', text: last ? `마지막 상담 ${fmtD(last.counsel_date)} (${dayDiff(today, last.counsel_date)}일 전) · 총 ${cs.length}회` : '상담 기록 없음'})),
       s.active ? null : el('span', {class:'badge gray', text:'비재직'}));
   });
@@ -786,7 +786,7 @@ function viewDetail(){
     el('button', {class:'back', type:'button', text:'← 직원 목록', onclick: () => { S.view = 'staff'; S.sel = null; S.editCounsel = null; render(); }}),
     el('div', {class:'card'},
       el('div', {class:'rowitem', style:'border:none;padding:0;'}, el('div', {class:'ava', text:s.initials}),
-        el('div', {class:'grow'}, el('div', {class:'t', text:[s.team, s.rank_title, s.duties].filter(Boolean).join(' · ') || '(정보 없음)'}),
+        el('div', {class:'grow'}, el('div', {class:'t', text:[s.name_masked, s.team, s.rank_title, s.duties].filter(Boolean).join(' · ') || '(정보 없음)'}),
           el('div', {class:'s', text:[s.joined_on ? `부임 ${fmtD(s.joined_on)}` : '', `상담 ${cs.length}회`, s.active ? '' : '비재직'].filter(Boolean).join(' · ')})),
         el('button', {class:'btn sm', type:'button', text:'정보 수정', onclick: () => { S.editStaff = true; render(); }})),
       staffExtra(s),
