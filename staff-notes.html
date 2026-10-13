@@ -389,7 +389,7 @@ async function errMsg(res, fb){ try{ const j = await res.json(); return j.messag
 /* ---------- 상태 ---------- */
 let me = null;    // 로그인한 지점장 정보 (승인 목록의 내 행)
 const MANAGER_ROLES = ['owner','branch_admin'];   // 지점장 역할 (직원 staff는 제외)
-const S = { staff: [], counsels: [], view:'dash', sel:null, editStaff:false, editCounsel:null, showInactive:false };
+const S = { hist:{ staff:'', type:'', q:'' }, staff: [], counsels: [], view:'dash', sel:null, editStaff:false, editCounsel:null, showInactive:false };
 let idleTimer = null;
 function armIdle(){
   clearTimeout(idleTimer);
@@ -487,10 +487,10 @@ const staffById = (id) => S.staff.find(s => s.id === id);
 /* ---------- 화면 ---------- */
 function render(){
   const tabs = el('div', {class:'tabs'},
-    [['dash','오늘 할 일'],['staff','직원 목록']].map(([k, t]) =>
+    [['dash','오늘 할 일'],['staff','직원 목록'],['hist','상담 이력']].map(([k, t]) =>
       el('button', {class:'tab' + ((S.view === k || (S.view === 'detail' && k === 'staff')) ? ' active' : ''), type:'button', text:t,
         onclick: () => { S.view = k; S.sel = null; S.editStaff = false; S.editCounsel = null; render(); }})));
-  const body = S.view === 'dash' ? viewDash() : S.view === 'staff' ? viewStaff() : viewDetail();
+  const body = S.view === 'dash' ? viewDash() : S.view === 'staff' ? viewStaff() : S.view === 'hist' ? viewHistory() : viewDetail();
   app.replaceChildren(
     el('div', {class:'top'}, el('div', {class:'top-inner'}, el('h1', {text: me ? `${me.branch_name} 직원 상담 관리` : '직원 상담 관리'}),
       el('span', {class:'who', text: me ? `${me.display_name || me.manager_name || ''} 지점장`.trim() : ''}),
@@ -507,7 +507,7 @@ function rowForFollow(c){
   const chk = el('input', {type:'checkbox', 'aria-label':'이행 완료', onchange: async (e) => { await toggleFollow(c, e.target.checked); }});
   return el('div', {class:'rowitem'}, chk,
     el('div', {class:'grow click', style:'cursor:pointer', onclick: () => openStaff(c.staff_id)},
-      el('div', {class:'t'}, el('span', {class:'badge'}, s ? s.initials : '?'), c.follow_up),
+      el('div', {class:'t'}, el('span', {class:'badge'}, s ? [s.initials, s.name_masked].filter(Boolean).join(' · ') : '?'), c.follow_up),
       el('div', {class:'s'}, `상담 ${fmtD(c.counsel_date)}${c.follow_due ? ` · 기한 ${fmtD(c.follow_due)}` : ''}`)),
     late ? el('span', {class:'badge red', text:'기한 지남'}) : null);
 }
@@ -625,6 +625,47 @@ function staffForm(s){
         S.staff = S.staff.filter(x => x.id !== s.id); S.counsels = S.counsels.filter(c => c.staff_id !== s.id);
         S.view = 'staff'; S.sel = null; S.editStaff = false; toast('삭제했습니다.'); render();
       }) : null));
+}
+
+/* ---------- 상담 이력 전체 ---------- */
+function viewHistory(){
+  const H = S.hist, today = todayStr();
+  const sel = el('select', {}, el('option', {value:'', text:'전체 직원'}),
+    S.staff.map(x => el('option', {value:x.id, text:[x.initials, x.name_masked].filter(Boolean).join(' · ') + (x.active ? '' : ' (비재직)')})));
+  const typ = el('select', {}, el('option', {value:'', text:'전체 양식'}), Object.entries(FORM_TYPES).map(([v, t]) => el('option', {value:v, text:t})));
+  const q = el('input', {type:'search', placeholder:'내용 검색 (요약·후속 조치·양식 항목)', maxlength:50});
+  sel.value = H.staff; typ.value = H.type; q.value = H.q;
+  const cnt = el('div', {class:'hint', style:'margin:8px 0;'});
+  const list = el('div', {class:'tl'});
+  const draw = () => {
+    H.staff = sel.value; H.type = typ.value; H.q = q.value.trim();
+    const kw = H.q.toLowerCase();
+    const rows = S.counsels.filter(c => (!H.staff || c.staff_id === H.staff) && (!H.type || (c.form_type || 'hr') === H.type)
+      && (!kw || [c.summary, c.follow_up, c.kind, c.period, ...Object.values(c.form || {})].filter(Boolean).join(' ').toLowerCase().includes(kw)));
+    cnt.textContent = `총 ${rows.length}건` + (rows.length !== S.counsels.length ? ` (전체 ${S.counsels.length}건)` : '');
+    list.replaceChildren(...(rows.length ? rows.map(c => {
+      const st = staffById(c.staff_id);
+      const late = c.follow_up && !c.follow_done && c.follow_due && c.follow_due < today;
+      return el('div', {class:'tli'},
+        el('div', {class:'d'}, el('b', {text: st ? [st.initials, st.name_masked].filter(Boolean).join(' · ') : '(삭제된 직원)', style:'margin-right:8px;'}),
+          el('span', {class:'badge', text:c.kind}), el('span', {class:'badge gray', text: FORM_TYPES[c.form_type] || '인사상담'}),
+          c.period ? el('span', {class:'badge gray', text:c.period}) : null, fmtD(c.counsel_date)),
+        el('div', {class:'sm-text', text:c.summary}), formView(c),
+        c.follow_up ? el('div', {class:'fu' + (c.follow_done ? ' done' : '')},
+          el('input', {type:'checkbox', checked: c.follow_done, 'aria-label':'이행 완료', onchange: (e) => toggleFollow(c, e.target.checked)}),
+          el('span', {class:'ft', text:`후속: ${c.follow_up}${c.follow_due ? ` (기한 ${fmtD(c.follow_due)})` : ''}`}),
+          late ? el('span', {class:'badge red', text:'기한 지남'}) : null) : null,
+        el('div', {class:'actions', style:'margin-top:6px;'},
+          st ? el('button', {class:'btn sm', type:'button', text:'직원 상세·수정', onclick: () => { S.editCounsel = c.id; openStaff(st.id); S.editCounsel = c.id; render(); }}) : null,
+          st ? el('button', {class:'btn sm', type:'button', text:'양식 인쇄', onclick: () => printForm(st, c)}) : null));
+    }) : [el('div', {class:'empty', text:'조건에 맞는 상담 이력이 없습니다.'})]));
+  };
+  sel.addEventListener('change', draw); typ.addEventListener('change', draw); q.addEventListener('input', draw);
+  draw();
+  return el('div', {class:'card'}, el('h2', {text:'상담 이력 전체'}),
+    el('p', {class:'desc', text:'모든 직원의 상담 기록을 최신순으로 봅니다. 직원·양식으로 거르거나 내용을 검색하세요.'}),
+    el('div', {class:'row3'}, el('div', {class:'field'}, el('label', {text:'직원'}), sel), el('div', {class:'field'}, el('label', {text:'양식'}), typ), el('div', {class:'field'}, el('label', {text:'검색'}), q)),
+    cnt, list);
 }
 
 function viewStaff(){
@@ -832,7 +873,7 @@ function viewDetail(){
   const items = cs.map(c => {
     const late = c.follow_up && !c.follow_done && c.follow_due && c.follow_due < today;
     return el('div', {class:'tli'},
-      el('div', {class:'d'}, el('span', {class:'badge', text:c.kind}), c.period ? el('span', {class:'badge gray', text:c.period}) : null, fmtD(c.counsel_date)),
+      el('div', {class:'d'}, el('span', {class:'badge', text:c.kind}), el('span', {class:'badge gray', text: FORM_TYPES[c.form_type] || '인사상담'}), c.period ? el('span', {class:'badge gray', text:c.period}) : null, fmtD(c.counsel_date)),
       el('div', {class:'sm-text', text:c.summary}), formView(c),
       c.follow_up ? el('div', {class:'fu' + (c.follow_done ? ' done' : '')},
         el('input', {type:'checkbox', checked: c.follow_done, 'aria-label':'이행 완료', onchange: (e) => toggleFollow(c, e.target.checked)}),
