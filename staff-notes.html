@@ -208,7 +208,20 @@ const itemLabel = (g, l) => g.grp && l ? `${g.grp} · ${l}` : (g.grp || l);
 
 /* ---------- AI 노트 (클로바노트 텍스트 → Gemini 무료 API 요약) ---------- */
 const AI_KEY_STORE = 'staff_notes_gemini_key';          // 키는 코드에 넣지 않고 탭 세션에만 보관
-const GEMINI_MODELS = ['gemini-2.5-flash', 'gemini-2.0-flash'];   // 앞에서부터 시도
+const GEMINI_MODELS = ['gemini-flash-latest', 'gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite'];   // 앞에서부터 시도 (모두 막히면 ListModels로 자동 탐색)
+const GEMINI_MODEL_STORE = 'staff_notes_gemini_model';   // 마지막으로 성공한 모델(탭 세션)
+async function listFlashModels(key){
+  try{
+    const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200', { headers:{ 'x-goog-api-key': key } });
+    if (!r.ok) return [];
+    const j = await r.json();
+    const ver = (n) => (n.match(/gemini-(\d+(?:\.\d+)?)/) || [0, 0])[1] * 1;
+    return (j.models || []).filter(m => (m.supportedGenerationMethods || []).includes('generateContent'))
+      .map(m => m.name.replace(/^models\//, ''))
+      .filter(n => /^gemini-[\d.]+-flash(-lite)?$/.test(n) || n === 'gemini-flash-latest')
+      .sort((a, b) => (/lite/.test(a) ? 1 : 0) - (/lite/.test(b) ? 1 : 0) || ver(b) - ver(a));
+  }catch(e){ return []; }
+}
 const AI_MAX_CHARS = 150000;
 const AI_SYSTEM = `당신은 은행 지점장의 인사상담 기록을 정리하는 비서입니다. 입력은 클로바노트로 녹음한 직원 상담 녹취 텍스트입니다.
 규칙:
@@ -245,14 +258,15 @@ async function aiSummarize(text, staff, kind, key, ftype){
     contents: [{ role:'user', parts: [{ text: `상담 유형: ${kind}\n대상 직원 이니셜: ${staff.initials}\n\n[녹취 텍스트 시작]\n${text}\n[녹취 텍스트 끝]` }] }],
     generationConfig: { temperature: 0.2, responseMimeType: 'application/json' }
   };
-  let lastErr = 'AI 요청에 실패했습니다.';
-  for (const model of GEMINI_MODELS){
+  const tried = new Set();
+  const attempt = async (model) => {
+    tried.add(model);
     let res;
     try{
       res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
         method:'POST', headers:{ 'Content-Type':'application/json', 'x-goog-api-key': key }, body: JSON.stringify(body) });
     }catch(e){ throw new Error('네트워크 오류로 AI에 연결하지 못했습니다.'); }
-    if (res.status === 404){ lastErr = `모델(${model})을 사용할 수 없어 다음 모델을 시도합니다.`; continue; }
+    if (res.status === 404) return null;                       // 모델이 종료/변경됨 → 다음 모델
     if (res.status === 400 || res.status === 403){ throw new Error('API 키가 올바르지 않거나 권한이 없습니다. 키를 확인해 주세요.'); }
     if (res.status === 429){ throw new Error('무료 사용량을 초과했습니다. 잠시 후 다시 시도해 주세요.'); }
     if (!res.ok){ throw new Error('AI 요청에 실패했습니다. (' + res.status + ')'); }
@@ -260,9 +274,14 @@ async function aiSummarize(text, staff, kind, key, ftype){
     const parts = j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts;
     const out = (parts || []).map(p => p.text || '').join('');
     if (!out) throw new Error('AI가 응답을 만들지 못했습니다. (안전 필터 또는 빈 응답)');
+    ssSet(GEMINI_MODEL_STORE, model);
     return parseAiJson(out);
-  }
-  throw new Error(lastErr);
+  };
+  const first = [ssGet(GEMINI_MODEL_STORE), ...GEMINI_MODELS].filter(Boolean);
+  for (const m of first){ if (tried.has(m)) continue; const r = await attempt(m); if (r) return r; }
+  for (const m of await listFlashModels(key)){ if (tried.has(m)) continue; const r = await attempt(m); if (r) return r; }   // 최신 모델 자동 탐색
+  ssDel(GEMINI_MODEL_STORE);
+  throw new Error('사용 가능한 Gemini 모델을 찾지 못했습니다. API 키를 확인하거나 잠시 후 다시 시도해 주세요.');
 }
 
 /* ---------- 양식 인쇄 (종이 면담 양식과 같은 구성) ---------- */
@@ -379,7 +398,7 @@ function armIdle(){
 }
 ['pointerdown','keydown','touchstart'].forEach(ev => window.addEventListener(ev, armIdle, {passive:true}));
 function logout(msg){
-  saveSession(null); ssDel(AI_KEY_STORE); clearTimeout(idleTimer);
+  saveSession(null); ssDel(AI_KEY_STORE); ssDel(GEMINI_MODEL_STORE); clearTimeout(idleTimer);
   me = null; S.staff = []; S.counsels = []; S.sel = null; S.view = 'dash'; S.editStaff = false; S.editCounsel = null;   // 메모리의 데이터도 비움
   renderLogin(msg);
 }
