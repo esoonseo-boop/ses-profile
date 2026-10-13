@@ -511,50 +511,57 @@ function render(){
       tabs, body));
 }
 
-function rowForFollow(c){
-  const s = staffById(c.staff_id), today = todayStr();
-  const late = c.follow_due && c.follow_due < today;
-  const chk = el('input', {type:'checkbox', 'aria-label':'이행 완료', onchange: async (e) => { await toggleFollow(c, e.target.checked); }});
-  return el('div', {class:'rowitem'}, chk,
-    el('div', {class:'grow click', style:'cursor:pointer', title:'상담 상세 보기', onclick: () => openCounsel(c)},
-      el('div', {class:'t'}, el('span', {class:'badge'}, s ? [s.initials, s.name_masked].filter(Boolean).join(' · ') : '?'), c.follow_up),
-      el('div', {class:'s'}, `상담 ${fmtD(c.counsel_date)}${c.follow_due ? ` · 기한 ${fmtD(c.follow_due)}` : ''}`)),
-    late ? el('span', {class:'badge red', text:'기한 지남'}) : null);
-}
 function viewDash(){
-  const m = summary();
-  const stat = (n, l, cls) => el('div', {class:'stat ' + (cls || '')}, el('div', {class:'n', text:String(n)}), el('div', {class:'l', text:l}));
-  const gapRow = (i) => el('div', {class:'rowitem click', onclick: () => openStaff(i.s.id)}, el('div', {class:'ava', text:i.s.initials}),
-    el('div', {class:'grow'}, el('div', {class:'t', text: [i.s.name_masked, i.s.team, i.s.rank_title].filter(Boolean).join(' · ') || '직급 미입력'}),
-      el('div', {class:'s', text: i.gap == null ? '상담 기록 없음' : `마지막 상담 ${fmtD(i.last.counsel_date)} (${i.gap}일 전)`})),
-    el('span', {class:'badge amber', text: i.gap == null ? '첫 상담 필요' : '상담 공백'}));
-  const soonRow = (i) => { const d = dayDiff(i.next, m.today);
-    return el('div', {class:'rowitem click', onclick: () => openStaff(i.s.id)}, el('div', {class:'ava', text:i.s.initials}),
-      el('div', {class:'grow'}, el('div', {class:'t', text:`예정일 ${fmtD(i.next)}`}), el('div', {class:'s', text: [i.s.name_masked, i.s.team, i.s.rank_title].filter(Boolean).join(' · ')})),
-      el('span', {class:'badge ' + (d < 0 ? 'red' : 'amber'), text: d < 0 ? `${-d}일 지남` : d === 0 ? '오늘' : `D-${d}`})); };
+  const m = summary(), today = m.today;
+  const nm = (st) => st ? [st.initials, st.name_masked].filter(Boolean).join(' · ') : '?';
+  const toNew = (id) => { openStaff(id); S.dtab = 'new'; render(); };      // 상담 등록 탭으로 바로 이동
+  const items = [];
+  m.open.forEach(c => { const st = staffById(c.staff_id), late = c.follow_due && c.follow_due < today;
+    items.push({ k:'follow', pri: late ? 0 : 2, sort: c.follow_due || '9999', label:'후속 조치', badge: late ? ['red', '기한 지남'] : null,
+      st, title: c.follow_up, sub: `상담 ${fmtD(c.counsel_date)}${c.follow_due ? ` · 기한 ${fmtD(c.follow_due)}` : ''}`, c }); });
+  m.soon.forEach(i => { const d = dayDiff(i.next, today);
+    items.push({ k:'soon', pri: d < 0 ? 0 : 1, sort: i.next, label:'상담 예정', badge: [d < 0 ? 'red' : 'amber', d < 0 ? `${-d}일 지남` : d === 0 ? '오늘' : `D-${d}`],
+      st: i.s, title: `예정일 ${fmtD(i.next)}`, sub: [i.s.team, i.s.rank_title].filter(Boolean).join(' · '), go: () => toNew(i.s.id) }); });
+  m.gapList.forEach(i => items.push({ k:'gap', pri:3, sort:'9999', label:'상담 공백', badge: ['amber', i.gap == null ? '첫 상담 필요' : `${i.gap}일째`],
+    st: i.s, title: i.gap == null ? '상담 기록 없음' : `마지막 상담 ${fmtD(i.last.counsel_date)}`, sub: [i.s.team, i.s.rank_title].filter(Boolean).join(' · '), go: () => toNew(i.s.id) }));
+  items.sort((a, b) => a.pri - b.pri || String(a.sort).localeCompare(String(b.sort)));
+  const cnt = (k) => k === 'all' ? items.length : items.filter(x => x.k === k).length;
+  const f = S.dfilter || 'all';
+  const seg = el('div', {class:'seg', role:'tablist'}, [['all','전체'], ['follow','후속 조치'], ['soon','상담 예정'], ['gap','상담 공백']].map(([k, t]) =>
+    el('button', {class:'seg-b' + (f === k ? ' on' : ''), type:'button', text:`${t} ${cnt(k)}`, onclick: () => { S.dfilter = k; render(); }})));
+  const rows = items.filter(x => f === 'all' || x.k === f).map(x => {
+    const chk = x.k === 'follow' ? el('input', {type:'checkbox', 'aria-label':'이행 완료', onchange: async (e) => { await toggleFollow(x.c, e.target.checked); }}) : null;
+    return el('div', {class:'rowitem'}, chk,
+      el('div', {class:'grow click', style:'cursor:pointer', onclick: () => x.c ? openCounsel(x.c) : x.go()},
+        el('div', {class:'t'}, el('span', {class:'badge gray', text:x.label}), ' ', x.title),
+        el('div', {class:'s', text: [nm(x.st), x.sub].filter(Boolean).join(' · ')})),
+      x.badge ? el('span', {class:'badge ' + x.badge[0], text:x.badge[1]}) : null);
+  });
   return el('div', {},
-    el('div', {class:'stats'},
-      stat(m.active.length, '재직 직원'),
-      stat(m.open.length, '미이행 후속 조치', m.open.length ? 'warn' : ''),
-      stat(m.soon.length, '상담 예정(7일 내·지연)', m.soon.length ? 'warn' : ''),
-      stat(m.gapList.length, `상담 공백(${GAP_DAYS}일↑·없음)`, m.gapList.length ? 'red' : '')),
-    el('div', {class:'card'}, el('h2', {text:'후속 조치 체크리스트'}), el('p', {class:'desc', text:'상담에서 약속한 조치입니다. 이행하면 체크하세요.'}),
-      m.open.length ? el('div', {class:'list'}, m.open.map(rowForFollow)) : el('div', {class:'empty', text:'미이행 후속 조치가 없습니다.'})),
-    el('div', {class:'card'}, el('h2', {text:'상담 예정 · 지연'}), el('p', {class:'desc', text:'다음 상담 예정일이 7일 이내이거나 지난 직원입니다.'}),
-      m.soon.length ? el('div', {class:'list'}, m.soon.map(soonRow)) : el('div', {class:'empty', text:'예정된 상담이 없습니다.'})),
-    el('div', {class:'card'}, el('h2', {text:'상담 공백 직원'}), el('p', {class:'desc', text:`마지막 상담이 ${GAP_DAYS}일을 넘었거나 아직 기록이 없는 직원입니다.`}),
-      m.gapList.length ? el('div', {class:'list'}, m.gapList.map(gapRow)) : el('div', {class:'empty', text:'모든 직원이 최근에 상담했습니다.'})));
+    seg,
+    el('div', {class:'card'},
+      rows.length ? el('div', {class:'list'}, rows) : el('div', {class:'empty', text: items.length ? '해당 항목이 없습니다.' : '오늘 처리할 일이 없습니다. 👍'}),
+      el('div', {class:'hint', style:'margin-top:10px;', text:`재직 ${m.active.length}명 · 상담 공백 기준 ${GAP_DAYS}일 · 항목을 누르면 상세로 이동합니다.`})));
 }
 
 /* ---------- 인사 상세 항목 ---------- */
 const EXTRA = [
-  ['name_masked','성명(마스킹)','text',10],['team','팀','text',20],['emp_no','직번','text',10],
+  ['name_masked','성명(마스킹)','text',10],['team','팀','text',20],['emp_no','직번','text',10],['birth_on','출생년월(일은 01)','date'],
   ['grade','급','num',9],['step','호봉','num',99],['rank_date','현직급 발령일','date'],['entered_on','입행일','date'],
   ['education','최종학력','text',40],['major','전공','text',40],['cohort','기수','text',30],['entry_note','입행비고','text',40],
   ['loan_years','여신 경력','text',10],['loan_mgmt','관리 경력','text',10],['fx_years','외환 경력','text',10],
   ['married','결혼(Y/N)','text',1],['hap_year','합년','num',2100],['recent_dept','최근부서(직전)','text',40],
   ['career','근무이력(최근→과거)','area',300]
 ];
+function ageOf(d){ const t = new Date(), b = new Date(d); let a = t.getFullYear() - b.getFullYear(); if (t.getMonth() < b.getMonth()) a--; return a; }   // 월 기준 만 나이
+function spanOf(d){   // 오늘까지 경과 기간 (N년 M개월)
+  if (!d) return ''; const t = new Date(), b = new Date(d);
+  let m = (t.getFullYear() - b.getFullYear()) * 12 + t.getMonth() - b.getMonth() - (t.getDate() < b.getDate() ? 1 : 0);
+  if (m < 0) return '예정'; if (m < 1) return '1개월 미만';
+  const y = Math.floor(m / 12), r = m % 12;
+  return (y ? `${y}년` : '') + (y && r ? ' ' : '') + (r ? `${r}개월` : '');
+}
+const withSpan = (d, label) => d ? `${d} (${label ? label + ' ' : ''}${spanOf(d)})` : null;
 function staffExtra(s){
   const v = (k) => (s[k] == null || s[k] === '') ? null : String(s[k]);
   const item = (l, val, w) => val ? el('div', {class:'hr-i' + (w ? ' w' : '')}, el('small', {text:l}), el('span', {text:val})) : null;
@@ -563,8 +570,8 @@ function staffExtra(s){
   const chips = career ? el('div', {class:'chips'}, career.split('←').flatMap((x, i, arr) => [
       el('span', {class:'chip' + (i === 0 ? ' cur' : ''), text:x.trim()}), i < arr.length - 1 ? el('i', {text:'←'}) : null])) : null;
   const groups = [
-    gp('직급·직번', [item('팀', v('team')), item('직번', v('emp_no')), item('급·호봉', s.grade ? `${s.grade}급` + (s.step ? ` ${s.step}호` : '') : null),
-      item('현직급 발령일', v('rank_date')), item('입행일', v('entered_on'))]),
+    gp('직급·직번', [item('팀', v('team')), item('직번', v('emp_no')), item('출생년월', s.birth_on ? `${s.birth_on.slice(0, 7)} (만 ${ageOf(s.birth_on)}세)` : null), item('급·호봉', s.grade ? `${s.grade}급` + (s.step ? ` ${s.step}호` : '') : null),
+      item('부임일(현 소속)', withSpan(v('joined_on'))), item('현직급 발령일', withSpan(v('rank_date'))), item('입행일', withSpan(v('entered_on'), '근속'))]),
     gp('학력·입행', [item('최종학력', v('education')), item('전공', v('major')), item('기수', v('cohort')), item('입행구분', v('entry_note'))]),
     gp('경력·기타', [item('여신 경력', v('loan_years')), item('관리 경력', v('loan_mgmt')), item('외환 경력', v('fx_years')), item('합년', v('hap_year')), item('결혼', v('married') === 'Y' ? '기혼' : (v('married') === 'N' ? '미혼' : null))]),
     gp('근무이력', [item('직전 부서', v('recent_dept')), chips ? el('div', {class:'hr-i w'}, el('small', {text:'최근 → 과거'}), chips) : null])
