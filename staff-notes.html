@@ -123,6 +123,9 @@
   .modal .msec{margin:14px 0 4px; font-size:12px; font-weight:800; color:var(--brand);}
   .modal .fi{padding:8px 0;} .modal .box{background:#F8FAFC; border:1px solid var(--line); border-radius:12px; padding:10px 12px; white-space:pre-wrap;}
   .clk{cursor:pointer;} .clk:hover{background:#F1F5F9;}
+  .seg{display:flex; gap:6px; margin:0 0 14px; background:#EEF2F7; padding:4px; border-radius:999px;}
+  .seg-b{flex:1; border:0; background:transparent; padding:9px 10px; border-radius:999px; font:inherit; font-weight:700; font-size:13.5px; color:var(--ink-soft); cursor:pointer;}
+  .seg-b.on{background:#fff; color:var(--brand); box-shadow:0 1px 4px rgba(15,23,42,.12);}
 </style>
 </head>
 <body>
@@ -395,7 +398,7 @@ async function errMsg(res, fb){ try{ const j = await res.json(); return j.messag
 /* ---------- 상태 ---------- */
 let me = null;    // 로그인한 지점장 정보 (승인 목록의 내 행)
 const MANAGER_ROLES = ['owner','branch_admin'];   // 지점장 역할 (직원 staff는 제외)
-const S = { hist:{ staff:'', type:'', q:'' }, staff: [], counsels: [], view:'dash', sel:null, editStaff:false, editCounsel:null, showInactive:false };
+const S = { dtab:'info', hist:{ staff:'', type:'', q:'' }, staff: [], counsels: [], view:'dash', sel:null, editStaff:false, editCounsel:null, showInactive:false };
 let idleTimer = null;
 function armIdle(){
   clearTimeout(idleTimer);
@@ -728,7 +731,7 @@ function viewStaff(){
         el('button', {class:'btn primary', type:'button', text:'+ 직원 추가', onclick: () => { S.editStaff = true; render(); }}),
         el('label', {class:'inline'}, el('input', {type:'checkbox', checked: S.showInactive, onchange: (e) => { S.showInactive = e.target.checked; render(); }}), '비재직 포함'))));
 }
-function openStaff(id){ S.sel = id; S.view = 'detail'; S.editStaff = false; S.editCounsel = null; render(); window.scrollTo(0, 0); }
+function openStaff(id){ S.sel = id; S.view = 'detail'; S.dtab = 'info'; S.editStaff = false; S.editCounsel = null; render(); window.scrollTo(0, 0); }
 
 async function toggleFollow(c, done){
   const res = await api('/rest/v1/staff_counsels?id=eq.' + c.id, { method:'PATCH', headers:{Prefer:'return=representation'}, body:{ follow_done: done } });
@@ -884,7 +887,7 @@ function counselForm(s, c){
       const row = (await res.json())[0];
       if (isNew) S.counsels.push(row); else Object.assign(c, row);
       S.counsels.sort((a, b) => b.counsel_date.localeCompare(a.counsel_date) || (b.created_at || '').localeCompare(a.created_at || ''));
-      S.editCounsel = null; toast('저장했습니다.'); render();
+      S.editCounsel = null; S.dtab = 'hist'; toast('저장했습니다.'); render(); window.scrollTo(0, 0);
     } finally { btn.disabled = false; }
   };
   const saveBtn = el('button', {class:'btn primary', type:'button', text: isNew ? '상담 기록 저장' : '수정 저장', onclick: () => save(saveBtn)});
@@ -905,7 +908,7 @@ function counselForm(s, c){
       el('div', {class:'field'}, el('label', {}, '조치 기한 ', el('span', {class:'opt', text:'(선택)'})), f.due)),
     el('div', {class:'field', style:'max-width:300px;'}, el('label', {}, '다음 상담 예정일 ', el('span', {class:'opt', text:'(선택)'})), f.next),
     msg, el('div', {class:'actions'}, saveBtn,
-      !isNew ? el('button', {class:'btn', type:'button', text:'취소', onclick: () => { S.editCounsel = null; render(); }}) : null,
+      !isNew ? el('button', {class:'btn', type:'button', text:'취소', onclick: () => { S.editCounsel = null; S.dtab = 'hist'; render(); }}) : null,
       el('button', {class:'btn', type:'button', text:'빈 양식 인쇄', onclick: () => printForm(s, null, f.ftype.value)})));
   return el('div', {id:'counselForm'}, aiCard, formCard);
 }
@@ -927,7 +930,7 @@ function viewDetail(){
         late ? el('span', {class:'badge red', text:'기한 지남'}) : null) : null,
       c.next_date ? el('div', {class:'s', style:'font-size:12.5px;color:var(--ink-soft);margin-top:3px;', text:`다음 상담 예정 ${fmtD(c.next_date)}`}) : null,
       el('div', {class:'actions', style:'margin-top:6px;'},
-        el('button', {class:'btn sm', type:'button', text:'수정', onclick: () => { S.editCounsel = c.id; render(); document.getElementById('counselForm')?.scrollIntoView({block:'center'}); }}),
+        el('button', {class:'btn sm', type:'button', text:'수정', onclick: () => { S.editCounsel = c.id; render(); window.scrollTo(0, 0); }}),
         el('button', {class:'btn sm', type:'button', text:'양식 인쇄', onclick: () => printForm(s, c)}),
         confirmButton('삭제', '정말 삭제', async () => {
           const res = await api('/rest/v1/staff_counsels?id=eq.' + c.id, { method:'DELETE' });
@@ -935,16 +938,22 @@ function viewDetail(){
           S.counsels = S.counsels.filter(x => x.id !== c.id); toast('삭제했습니다.'); render();
         })));
   });
+  const tab = S.editCounsel ? 'new' : S.dtab;
+  const dtabs = el('div', {class:'seg', role:'tablist'}, [['info','인사정보'], ['hist',`상담 이력 (${cs.length})`], ['new', editing ? '상담 수정' : '+ 상담 등록']].map(([k, t]) =>
+    el('button', {class:'seg-b' + (tab === k ? ' on' : ''), type:'button', role:'tab', 'aria-selected': tab === k ? 'true' : 'false', text:t,
+      onclick: () => { S.dtab = k; S.editCounsel = null; render(); }})));
   return el('div', {},
     el('button', {class:'back', type:'button', text:'← 직원 목록', onclick: () => { S.view = 'staff'; S.sel = null; S.editCounsel = null; render(); }}),
     el('div', {class:'card'},
       el('div', {class:'rowitem', style:'border:none;padding:0;'}, el('div', {class:'ava', text:s.initials}),
         el('div', {class:'grow'}, el('div', {class:'t', text:[s.name_masked, s.team, s.rank_title, s.duties].filter(Boolean).join(' · ') || '(정보 없음)'}),
           el('div', {class:'s', text:[s.joined_on ? `부임 ${fmtD(s.joined_on)}` : '', `상담 ${cs.length}회`, s.active ? '' : '비재직'].filter(Boolean).join(' · ')})),
-        el('button', {class:'btn sm', type:'button', text:'정보 수정', onclick: () => { S.editStaff = true; render(); }})),
-      staffExtra(s),
-      s.memo ? el('div', {class:'hint', style:'margin-top:8px;', text:`메모: ${s.memo}`}) : null),
-    counselForm(s, editing),
+        el('button', {class:'btn sm', type:'button', text:'정보 수정', onclick: () => { S.editStaff = true; render(); }}))),
+    dtabs,
+    tab === 'info' ? el('div', {class:'card'}, staffExtra(s) || el('div', {class:'empty', text:'등록된 인사 상세정보가 없습니다. 위 "정보 수정"에서 입력하세요.'}),
+        s.memo ? el('div', {class:'hint', style:'margin-top:10px;', text:`메모: ${s.memo}`}) : null,
+        el('div', {class:'actions', style:'margin-top:14px;'}, el('button', {class:'btn primary', type:'button', text:'+ 상담 등록', onclick: () => { S.dtab = 'new'; render(); window.scrollTo(0, 0); }}))) :
+    tab === 'new' ? counselForm(s, editing) :
     el('div', {class:'card'}, el('h2', {text:'상담 이력'}),
       cs.length ? el('div', {class:'tl', style:'margin-top:12px;'}, items) : el('div', {class:'empty', text:'아직 상담 기록이 없습니다.'})));
 }
