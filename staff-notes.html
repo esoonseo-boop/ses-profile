@@ -723,22 +723,34 @@ function viewHistory(){
 function viewStaff(){
   if (S.editStaff) return staffForm(null);
   const today = todayStr();
-  const list = S.staff.filter(s => S.showInactive || s.active);
-  const rows = list.map(s => {
-    const cs = countsOf(s.id), last = cs[0];
-    return el('div', {class:'rowitem click' + (s.active ? '' : ' dim'), onclick: () => openStaff(s.id)},
-      el('div', {class:'ava', text:s.initials}),
-      el('div', {class:'grow'}, el('div', {class:'t'}, [s.name_masked, s.team, s.rank_title, s.duties].filter(Boolean).join(' · ') || '(정보 없음)'),
-        el('div', {class:'s', text: last ? `마지막 상담 ${fmtD(last.counsel_date)} (${dayDiff(today, last.counsel_date)}일 전) · 총 ${cs.length}회` : '상담 기록 없음'})),
-      s.active ? null : el('span', {class:'badge gray', text:'비재직'}));
-  });
+  const q = el('input', {type:'search', placeholder:'이니셜·이름·팀·직급·업무 검색', maxlength:30, value: S.staffQ || ''});
+  const box = el('div', {});
+  const draw = () => {
+    S.staffQ = q.value.trim(); const kw = S.staffQ.toLowerCase();
+    const list = S.staff.filter(s => (S.showInactive || s.active) &&
+      (!kw || [s.initials, s.name_masked, s.team, s.rank_title, s.duties, s.emp_no].filter(Boolean).join(' ').toLowerCase().includes(kw)));
+    const rows = list.map(s => {
+      const cs = countsOf(s.id), last = cs[0];
+      return el('div', {class:'rowitem click' + (s.active ? '' : ' dim'), onclick: () => openStaff(s.id)},
+        el('div', {class:'ava', text:s.initials}),
+        el('div', {class:'grow'}, el('div', {class:'t'}, [s.name_masked, s.team, s.rank_title, s.duties].filter(Boolean).join(' · ') || '(정보 없음)'),
+          el('div', {class:'s', text: last ? `마지막 상담 ${fmtD(last.counsel_date)} (${dayDiff(today, last.counsel_date)}일 전) · 총 ${cs.length}회` : '상담 기록 없음'})),
+        s.active ? null : el('span', {class:'badge gray', text:'비재직'}));
+    });
+    box.replaceChildren(
+      el('div', {class:'hint', style:'margin:8px 0;', text:`${list.length}명`}),
+      rows.length ? el('div', {class:'list'}, rows) : el('div', {class:'empty', text: kw ? '검색 결과가 없습니다.' : '등록된 직원이 없습니다. 아래 버튼으로 추가하세요.'}));
+  };
+  q.addEventListener('input', draw);
+  draw();
   return el('div', {},
-    el('div', {class:'card'}, el('h2', {text:'직원 목록'}), el('p', {class:'desc', text:'이니셜을 눌러 상담 이력을 확인·추가합니다.'}),
-      rows.length ? el('div', {class:'list'}, rows) : el('div', {class:'empty', text:'등록된 직원이 없습니다. 아래 버튼으로 추가하세요.'}),
+    el('div', {class:'card'}, el('h2', {text:'직원 목록'}), el('p', {class:'desc', text:'직원을 눌러 인사정보와 상담 이력을 확인·등록합니다.'}),
+      q, box,
       el('div', {class:'actions', style:'margin-top:12px;'},
         el('button', {class:'btn primary', type:'button', text:'+ 직원 추가', onclick: () => { S.editStaff = true; render(); }}),
         el('label', {class:'inline'}, el('input', {type:'checkbox', checked: S.showInactive, onchange: (e) => { S.showInactive = e.target.checked; render(); }}), '비재직 포함'))));
 }
+
 function openStaff(id){ S.sel = id; S.view = 'detail'; S.dtab = 'info'; S.editStaff = false; S.editCounsel = null; render(); window.scrollTo(0, 0); }
 
 async function toggleFollow(c, done){
