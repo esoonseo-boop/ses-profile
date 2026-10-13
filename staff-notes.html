@@ -609,7 +609,7 @@ function counselForm(s, c){
     try{
       const buf = await file.arrayBuffer();
       let t = new TextDecoder('utf-8').decode(buf);
-      if (t.includes(' ')) t = new TextDecoder('euc-kr').decode(buf);   // 한글 인코딩이 다른 파일 대비
+      if (t.includes('�')) t = new TextDecoder('euc-kr').decode(buf);   // 한글 인코딩이 다른 파일 대비
       tx.value = t.trim(); updCnt();
       aiMsg.className = 'hint'; aiMsg.textContent = `'${file.name}' 불러옴. 내용을 확인한 뒤 요약을 실행하세요.`;
     }catch(e){ aiMsg.className = 'hint err'; aiMsg.textContent = '파일을 읽지 못했습니다.'; }
