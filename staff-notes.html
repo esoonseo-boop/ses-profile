@@ -491,12 +491,12 @@ function viewDash(){
   const m = summary();
   const stat = (n, l, cls) => el('div', {class:'stat ' + (cls || '')}, el('div', {class:'n', text:String(n)}), el('div', {class:'l', text:l}));
   const gapRow = (i) => el('div', {class:'rowitem click', onclick: () => openStaff(i.s.id)}, el('div', {class:'ava', text:i.s.initials}),
-    el('div', {class:'grow'}, el('div', {class:'t', text: i.s.rank_title || '직급 미입력'}),
+    el('div', {class:'grow'}, el('div', {class:'t', text: [i.s.name_masked, i.s.team, i.s.rank_title].filter(Boolean).join(' · ') || '직급 미입력'}),
       el('div', {class:'s', text: i.gap == null ? '상담 기록 없음' : `마지막 상담 ${fmtD(i.last.counsel_date)} (${i.gap}일 전)`})),
     el('span', {class:'badge amber', text: i.gap == null ? '첫 상담 필요' : '상담 공백'}));
   const soonRow = (i) => { const d = dayDiff(i.next, m.today);
     return el('div', {class:'rowitem click', onclick: () => openStaff(i.s.id)}, el('div', {class:'ava', text:i.s.initials}),
-      el('div', {class:'grow'}, el('div', {class:'t', text:`예정일 ${fmtD(i.next)}`}), el('div', {class:'s', text: i.s.rank_title || ''})),
+      el('div', {class:'grow'}, el('div', {class:'t', text:`예정일 ${fmtD(i.next)}`}), el('div', {class:'s', text: [i.s.name_masked, i.s.team, i.s.rank_title].filter(Boolean).join(' · ')})),
       el('span', {class:'badge ' + (d < 0 ? 'red' : 'amber'), text: d < 0 ? `${-d}일 지남` : d === 0 ? '오늘' : `D-${d}`})); };
   return el('div', {},
     el('div', {class:'stats'},
