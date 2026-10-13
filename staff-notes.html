@@ -112,6 +112,11 @@
   .chips{display:flex; flex-wrap:wrap; gap:6px; align-items:center;}
   .chip{background:#eef3ff; color:var(--brand); border-radius:999px; padding:3px 10px; font-size:12px; font-weight:700;} .chip.cur{background:var(--brand); color:#fff;} .chips i{color:var(--ink-soft); font-style:normal; font-size:11px;}
   @media (min-width:720px){ .hr{grid-template-columns:1fr 1fr;} .hr-g.w{grid-column:1/-1;} }
+  .pill-group{display:flex; gap:8px; flex-wrap:wrap;}
+  .pill-radio{position:relative; cursor:pointer;} .pill-radio input{position:absolute; opacity:0; inset:0; cursor:pointer;}
+  .pill-radio span{display:inline-block; padding:8px 18px; border-radius:999px; border:1.5px solid var(--line); background:#fff; font-weight:700; font-size:13.5px; color:var(--ink-soft);}
+  .pill-radio input:checked + span{background:var(--brand); border-color:var(--brand); color:#fff;}
+  .pill-radio input:focus-visible + span{outline:2px solid var(--brand-dark); outline-offset:2px;}
 </style>
 </head>
 <body>
@@ -648,7 +653,18 @@ function counselForm(s, c){
   f.sum.addEventListener('input', () => { cnt.textContent = `${f.sum.value.length}/500`; });
 
   // 양식 항목(텍스트 영역) — 상담 양식(인사/일반)에 따라 구성
-  f.ftype = el('select', {}, Object.entries(FORM_TYPES).map(([v, t]) => el('option', {value:v, text:t})));
+  const ftName = 'ftype_' + Math.random().toString(36).slice(2, 8), ftHandlers = [];
+  const ftRadios = Object.entries(FORM_TYPES).map(([v, t]) => {
+    const r = el('input', {type:'radio', name:ftName, value:v});
+    r.addEventListener('change', () => ftHandlers.forEach(h => h()));
+    return { v, r, node: el('label', {class:'pill-radio'}, r, el('span', {text:t})) };
+  });
+  f.ftype = {
+    node: el('div', {class:'pill-group', role:'radiogroup'}, ftRadios.map(x => x.node)),
+    get value(){ const x = ftRadios.find(x => x.r.checked); return x ? x.v : 'hr'; },
+    set value(v){ ftRadios.forEach(x => { x.r.checked = x.v === v; }); },
+    addEventListener(ev, fn){ ftHandlers.push(fn); }
+  };
   f.ftype.value = (c && c.form_type) || 'hr';
   let ta = {};
   const fbox = el('div', {});
@@ -719,7 +735,7 @@ function counselForm(s, c){
   const aiCard = el('div', {class:'card ai'},
     el('h2', {text:'AI 노트 · 클로바노트 요약'}),
     el('p', {class:'desc', text:'녹음한 상담 내용을 클로바노트에서 텍스트로 내보내 첨부하면, 아래 상담 양식 항목을 자동으로 채웁니다.'}),
-    el('div', {class:'field', style:'max-width:260px;'}, el('label', {text:'상담 양식'}), f.ftype),
+    el('div', {class:'field'}, el('label', {text:'상담 양식'}), f.ftype.node),
     el('div', {class:'field'}, el('label', {text:'녹취 텍스트 파일 (.txt)'}), fileIn),
     el('div', {class:'field'}, el('label', {}, '녹취 텍스트 ', txCnt), tx),
     el('div', {class:'row2'},
