@@ -572,7 +572,7 @@ function staffExtra(s){
       el('span', {class:'chip' + (i === 0 ? ' cur' : ''), text:x.trim()}), i < arr.length - 1 ? el('i', {text:'←'}) : null])) : null;
   const groups = [
     gp('직급·직번', [item('팀', v('team')), item('직번', v('emp_no')), item('출생년월', s.birth_on ? `${s.birth_on.slice(0, 7)} (만 ${ageOf(s.birth_on)}세)` : null), item('급·호봉', s.grade ? `${s.grade}급` + (s.step ? ` ${s.step}호` : '') : null),
-      item('부임일(현 소속)', withSpan(v('joined_on'))), item('현직급 발령일', withSpan(v('rank_date'))), item('입행일', withSpan(v('entered_on'), '근속'))]),
+      item('부임일(현 소속)', withSpan(v('joined_on'))), item('현직급 발령일', withSpan(v('rank_date'))), item('입행일', withSpan(v('entered_on')))]),
     gp('학력·입행', [item('최종학력', v('education')), item('전공', v('major')), item('기수', v('cohort')), item('입행구분', v('entry_note'))]),
     gp('경력·기타', [item('여신 경력', v('loan_years')), item('관리 경력', v('loan_mgmt')), item('외환 경력', v('fx_years')), item('합년', v('hap_year')), item('결혼', v('married') === 'Y' ? '기혼' : (v('married') === 'N' ? '미혼' : null))]),
     gp('근무이력', [item('직전 부서', v('recent_dept')), chips ? el('div', {class:'hr-i w'}, el('small', {text:'최근 → 과거'}), chips) : null])
