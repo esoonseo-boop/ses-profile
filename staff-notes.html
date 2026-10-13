@@ -46,10 +46,12 @@
   .field{margin-bottom:12px;}
   .field label{display:block; font-size:13px; font-weight:700; color:var(--ink-strong); margin-bottom:5px;}
   .field label .req{color:var(--danger);} .field label .opt{color:var(--ink-soft); font-weight:500; font-size:12px;}
-  input[type=text],input[type=email],input[type=password],input[type=date],textarea,select{
+  input[type=text],input[type=email],input[type=password],input[type=date],input[type=search],input[type=number],textarea,select{
     width:100%; padding:10px 12px; font:inherit; font-size:14.5px; color:var(--ink-strong);
     border:1.5px solid var(--line); border-radius:10px; background:#fff;}
   textarea{resize:vertical; min-height:84px;}
+  select,input[type=search]{height:44px; -webkit-appearance:none; appearance:none;}
+  select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%2364748B' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 14px center; padding-right:36px;}
   input:focus,textarea:focus,select:focus{outline:none; border-color:var(--brand); box-shadow:0 0 0 3px rgba(37,99,235,.12);}
   .row2{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
   .row3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px;}
@@ -757,7 +759,7 @@ function counselForm(s, c){
     fu: el('input', {type:'text', maxlength:200, value: c && c.follow_up || '', placeholder:'예: 6월 내 여신 교육 신청 지원'}),
     due: el('input', {type:'date', value: c && c.follow_due || ''}),
     next: el('input', {type:'date', value: c && c.next_date || ''}),
-    dur: el('input', {type:'number', min:1, max:600, step:1, inputmode:'numeric', value: c && c.duration_min || '', placeholder:'분'})
+    dur: el('input', {type:'number', min:1, max:600, step:1, inputmode:'numeric', value: c && c.duration_min || '', placeholder:'분', style:'width:110px;'})
   };
   f.kind.value = c ? c.kind : '업무'; f.sum.value = c ? c.summary : '';
   const cnt = el('span', {class:'hint', text:`${f.sum.value.length}/500`});
