@@ -479,16 +479,38 @@ function viewDash(){
       m.gapList.length ? el('div', {class:'list'}, m.gapList.map(gapRow)) : el('div', {class:'empty', text:'모든 직원이 최근에 상담했습니다.'})));
 }
 
+/* ---------- 인사 상세 항목 ---------- */
+const EXTRA = [
+  ['name_masked','성명(마스킹)','text',10],['team','팀','text',20],['emp_no','직번','text',10],
+  ['grade','급','num',9],['step','호봉','num',99],['rank_date','현직급 발령일','date'],['entered_on','입행일','date'],
+  ['education','최종학력','text',40],['major','전공','text',40],['cohort','기수','text',30],['entry_note','입행비고','text',40],
+  ['loan_years','여신 경력','text',10],['loan_mgmt','관리 경력','text',10],['fx_years','외환 경력','text',10],
+  ['married','결혼(Y/N)','text',1],['hap_year','합년','num',2100],['recent_dept','최근부서(직전)','text',40],
+  ['career','근무이력(최근→과거)','area',300]
+];
+function staffExtra(s){
+  const rows = EXTRA.filter(([k]) => s[k] != null && s[k] !== '').map(([k, l]) =>
+    el('div', {class:'fi'}, el('b', {text:l}), el('span', {text: String(s[k])})));
+  if (!rows.length) return null;
+  return el('details', {class:'fdet', open:true, style:'margin-top:10px;'}, el('summary', {text:`인사 상세정보 (${rows.length})`}), rows);
+}
+
 function staffForm(s){
   const isNew = !s;
   const f = {
     initials: el('input', {type:'text', maxlength:6, value: s ? s.initials : '', placeholder:'예: SAS 또는 ㅅㅇㅅ', autocomplete:'off'}),
     rank: el('input', {type:'text', maxlength:20, value: s && s.rank_title || '', placeholder:'예: 과장'}),
-    duties: el('input', {type:'text', maxlength:60, value: s && s.duties || '', placeholder:'예: 기업여신 담당'}),
+    duties: el('input', {type:'text', maxlength:300, value: s && s.duties || '', placeholder:'예: 기업여신 담당'}),
     joined: el('input', {type:'date', value: s && s.joined_on || ''}),
     memo: el('textarea', {maxlength:200, style:'min-height:64px', placeholder:'업무 특이사항 등 (민감 내용 제외)'}),
     active: el('input', {type:'checkbox'})
   };
+  const ex = {};
+  EXTRA.forEach(([k, l, t, mx]) => {
+    ex[k] = t === 'area' ? el('textarea', {maxlength:mx, style:'min-height:56px'}) : el('input', {type: t === 'date' ? 'date' : (t === 'num' ? 'number' : 'text'), maxlength: t === 'text' ? mx : undefined});
+    ex[k].value = s && s[k] != null ? s[k] : '';
+  });
+  const exBody = () => { const b = {}; EXTRA.forEach(([k, l, t]) => { const v = ex[k].value.trim(); b[k] = v === '' ? null : (t === 'num' ? Number(v) : v); }); return b; };
   f.memo.value = s && s.memo || ''; f.active.checked = s ? s.active : true;
   const msg = el('div', {class:'hint', style:'min-height:18px;'});
   let warned = false;
@@ -501,7 +523,7 @@ function staffForm(s){
     if (sc.block.length){ msg.className = 'hint err'; msg.textContent = `입력할 수 없는 정보가 있습니다: ${sc.block.join(', ')}`; return; }
     if (sc.warn.length && !warned){ warned = true; msg.className = 'hint warn'; msg.textContent = `민감할 수 있는 표현(${sc.warn.join(', ')})이 있습니다. 꼭 필요한 경우만 남기고, 저장하려면 한 번 더 누르세요.`; return; }
     const body = { branch_name: me.branch_name, initials: ini, rank_title: f.rank.value.trim() || null, duties: f.duties.value.trim() || null,
-                   joined_on: f.joined.value || null, memo: f.memo.value.trim() || null, active: f.active.checked };
+                   joined_on: f.joined.value || null, memo: f.memo.value.trim() || null, active: f.active.checked, ...exBody() };
     btn.disabled = true;
     try{
       const res = isNew ? await api('/rest/v1/staff_members', { method:'POST', headers:{Prefer:'return=representation'}, body })
@@ -522,6 +544,9 @@ function staffForm(s){
     el('div', {class:'row2'},
       el('div', {class:'field'}, el('label', {}, '담당 업무 ', el('span', {class:'opt', text:'(선택)'})), f.duties),
       el('div', {class:'field'}, el('label', {}, '부임일 ', el('span', {class:'opt', text:'(선택)'})), f.joined)),
+    el('details', {class:'fdet', open: !!s}, el('summary', {text:'인사 상세정보'}),
+      el('div', {class:'row2'}, ...EXTRA.filter(e => e[2] !== 'area').map(([k, l]) => el('div', {class:'field'}, el('label', {text:l}), ex[k]))),
+      el('div', {class:'field'}, el('label', {text:'근무이력(최근→과거)'}), ex.career)),
     el('div', {class:'field'}, el('label', {}, '메모 ', el('span', {class:'opt', text:'(선택, 200자)'})), f.memo),
     el('label', {class:'inline', style:'margin-bottom:10px;'}, f.active, '재직 중 (해제하면 대시보드에서 제외)'),
     msg, el('div', {class:'actions'}, saveBtn,
@@ -542,7 +567,7 @@ function viewStaff(){
     const cs = countsOf(s.id), last = cs[0];
     return el('div', {class:'rowitem click' + (s.active ? '' : ' dim'), onclick: () => openStaff(s.id)},
       el('div', {class:'ava', text:s.initials}),
-      el('div', {class:'grow'}, el('div', {class:'t'}, [s.rank_title, s.duties].filter(Boolean).join(' · ') || '(정보 없음)'),
+      el('div', {class:'grow'}, el('div', {class:'t'}, [s.team, s.rank_title, s.duties].filter(Boolean).join(' · ') || '(정보 없음)'),
         el('div', {class:'s', text: last ? `마지막 상담 ${fmtD(last.counsel_date)} (${dayDiff(today, last.counsel_date)}일 전) · 총 ${cs.length}회` : '상담 기록 없음'})),
       s.active ? null : el('span', {class:'badge gray', text:'비재직'}));
   });
@@ -730,9 +755,10 @@ function viewDetail(){
     el('button', {class:'back', type:'button', text:'← 직원 목록', onclick: () => { S.view = 'staff'; S.sel = null; S.editCounsel = null; render(); }}),
     el('div', {class:'card'},
       el('div', {class:'rowitem', style:'border:none;padding:0;'}, el('div', {class:'ava', text:s.initials}),
-        el('div', {class:'grow'}, el('div', {class:'t', text:[s.rank_title, s.duties].filter(Boolean).join(' · ') || '(정보 없음)'}),
+        el('div', {class:'grow'}, el('div', {class:'t', text:[s.team, s.rank_title, s.duties].filter(Boolean).join(' · ') || '(정보 없음)'}),
           el('div', {class:'s', text:[s.joined_on ? `부임 ${fmtD(s.joined_on)}` : '', `상담 ${cs.length}회`, s.active ? '' : '비재직'].filter(Boolean).join(' · ')})),
         el('button', {class:'btn sm', type:'button', text:'정보 수정', onclick: () => { S.editStaff = true; render(); }})),
+      staffExtra(s),
       s.memo ? el('div', {class:'hint', style:'margin-top:8px;', text:`메모: ${s.memo}`}) : null),
     counselForm(s, editing),
     el('div', {class:'card'}, el('h2', {text:'상담 이력'}),
