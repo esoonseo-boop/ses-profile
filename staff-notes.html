@@ -404,6 +404,10 @@ async function start(){
   if (r === 'noauth'){ saveSession(null); renderLogin('이 계정은 직원 상담 관리 권한이 없습니다.'); return false; }
   if (r === 'notable'){ saveSession(null); renderLogin('DB 설정(staff_notes.sql)이 아직 적용되지 않았습니다.'); return false; }
   if (r === 'error'){ saveSession(null); renderLogin('불러오지 못했습니다. 잠시 후 다시 시도해 주세요.'); return false; }
+  try{   // 서버에 저장된 내 Gemini 키 불러오기 (지점장 본인만 접근 가능)
+    const kr = await api('/rest/v1/staff_settings?select=gemini_key');
+    if (kr.ok){ const kj = await kr.json(); if (kj[0] && kj[0].gemini_key) ssSet(AI_KEY_STORE, kj[0].gemini_key); }
+  }catch(e){}
   armIdle(); render(); return true;
 }
 
@@ -669,6 +673,13 @@ function counselForm(s, c){
     el('div', {class:'field'}, el('label', {}, '녹취 텍스트 ', txCnt), tx),
     el('div', {class:'row2'},
       el('div', {class:'field'}, el('label', {text:'Gemini API 키'}), keyIn,
+        el('div', {class:'actions', style:'margin-top:6px;'}, el('button', {class:'btn sm', type:'button', text:'내 계정에 키 저장', onclick: async () => {
+          const k = keyIn.value.trim();
+          if (k.length < 20){ aiMsg.className = 'hint err'; aiMsg.textContent = '올바른 API 키를 입력해 주세요.'; return; }
+          const r = await api('/rest/v1/staff_settings?on_conflict=owner_id', { method:'POST', headers:{Prefer:'resolution=merge-duplicates,return=minimal'}, body:{ gemini_key: k, updated_at: new Date().toISOString() } });
+          if (r.ok){ ssSet(AI_KEY_STORE, k); aiMsg.className = 'hint'; aiMsg.textContent = '키를 내 계정에 저장했습니다. 다음 로그인부터 자동으로 불러옵니다.'; }
+          else { aiMsg.className = 'hint err'; aiMsg.textContent = await errMsg(r, '키를 저장하지 못했습니다.'); }
+        }})),
         el('div', {class:'hint'}, '무료 키: ', el('a', {href:'https://aistudio.google.com/apikey', target:'_blank', rel:'noopener noreferrer', text:'Google AI Studio'}), ' · 이 탭을 닫거나 로그아웃하면 지워집니다.')),
       el('div', {class:'field', style:'align-self:end;'}, el('label', {class:'inline'}, over, '이미 입력한 항목도 덮어쓰기'))),
     el('div', {class:'notice', style:'margin:4px 0 10px;'},
