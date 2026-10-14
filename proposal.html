@@ -6,6 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>맞춤 제안서 | IBK기업은행</title>
 <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="preconnect" href="https://oqeiaaworcarixndtomj.supabase.co" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -208,6 +209,8 @@ const BUCKET = "proposal-pdfs";
 const DATA_URL = "/proposals/data.json";   // 샘플(sample01, sample02) 전용 예비 데이터
 const PDF_BASE = "/proposals/";
 const PDFJS_VER = "3.11.174";
+// 한글 글꼴이 PDF에 포함되지 않은 경우(CMap) 등을 그리기 위한 pdf.js 부속 데이터(cdnjs에는 없어 jsDelivr 사용)
+const PDFJS_DATA = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${PDFJS_VER}/`;
 
 const app = document.getElementById('app');
 
@@ -464,7 +467,7 @@ function buildSlides(){
 /* PDF는 필요할 때 처음 열고(캐시), 쪽수가 달라졌으면 슬라이드 목록만 조용히 갱신 */
 function ensureDoc(i){
   if (!V.docP[i]){
-    V.docP[i] = window.pdfjsLib.getDocument({ url:V.view.items[i].product.url, disableRange:true }).promise   // 구간 요청은 CDN 캐시를 우회해 오히려 느리므로 통째로 받음
+    V.docP[i] = window.pdfjsLib.getDocument({ url:V.view.items[i].product.url, disableRange:true, cMapUrl:PDFJS_DATA + 'cmaps/', cMapPacked:true, standardFontDataUrl:PDFJS_DATA + 'standard_fonts/' }).promise   // 구간 요청은 CDN 캐시를 우회해 오히려 느리므로 통째로 받음
       .then(d => { V.docs[i] = d; return d; })
       .catch(() => { V.failed[i] = true; V.docs[i] = null; return null; });
   }
