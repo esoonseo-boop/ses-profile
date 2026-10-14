@@ -203,7 +203,12 @@ const FORM_GROUPS = [
     ['efficiency','업무효율성','업무수행에 있어 추가로 필요한 지원이나 자원이 있나요?'],
     ['culture','조직문화 및 팀워크','팀 내 소통, 협업에서 개선이 필요한 부분이 있나요?']] },
   { sec:'기타', grp:'', items:[
-    ['recommend','추천직원','']] }
+    ['recommend','추천직원','']] },
+  { sec:'종합 (인사시스템 입력용)', grp:'', items:[
+    ['hr_trait','성격·성향 한줄평','업무능력, 자질, 품성, 태도 등을 요약 기재', 100],
+    ['hr_special','특이사항','개인신상, 특기, 자기개발 등 상담 내용 중 특이사항이 있는 경우 기재 (예: ADsP, SQLD 등 자격)', 200],
+    ['hr_content','인사상담내용(요약)','교통·건강 등 애로 및 희망사항, 업무 외적 애로사항을 기재', 300],
+    ['hr_opinion','상담소견 (한글 150자 이내)','상담에 대한 지점장 소견', 150]] }
 ];
 const GENERAL_GROUPS = [
   { sec:'일반상담', grp:'상담 주제', items:[['g_topic','','어떤 주제로 상담했나요?']] },
@@ -243,7 +248,7 @@ const AI_SYSTEM = `당신은 은행 지점장의 인사상담 기록을 정리�
 - 각 항목은 1~3문장의 간결한 개조식(~함, ~임)으로 요약합니다.
 - 후속 조치는 지점장이 해야 할 일이 녹취에서 분명히 언급된 경우에만 적습니다.
 출력은 아래 키를 가진 JSON 객체 하나만 출력합니다(다른 설명 금지):
-summary(상담 종합 요약 3~5문장), work_doing(수행업무), work_result(업무실적), work_plan(업무계획), job_satisfaction(직무만족도), desired_job(희망직무), promotion_move(승진 또는 이동), strengths(장점), weaknesses(단점), self_dev(자기개발 및 특기), personal_changes(개인신상 변동), concerns(애로사항·개인고민), efficiency(업무효율성 관련 희망사항), culture(조직문화 및 팀워크 관련 희망사항), recommend(추천직원), follow_up(후속 조치)`;
+summary(상담 종합 요약 3~5문장), work_doing(수행업무), work_result(업무실적), work_plan(업무계획), job_satisfaction(직무만족도), desired_job(희망직무), promotion_move(승진 또는 이동), strengths(장점), weaknesses(단점), self_dev(자기개발 및 특기), personal_changes(개인신상 변동), concerns(애로사항·개인고민), efficiency(업무효율성 관련 희망사항), culture(조직문화 및 팀워크 관련 희망사항), recommend(추천직원), hr_trait(성격·성향 한줄평: 업무능력·자질·품성·태도 요약, 100자 이내), hr_special(특이사항: 개인신상·특기·자기개발·자격 중 특이한 것, 200자 이내), hr_content(인사상담내용 요약: 업무 외적 애로 및 희망사항, 300자 이내), hr_opinion(상담소견, 한글 150자 이내), follow_up(후속 조치)`;
 
 function maskPII(t){
   return BLOCK.reduce((acc, [re]) => acc.replace(new RegExp(re.source, 'g'), '[가림]'), t);
@@ -800,10 +805,12 @@ function counselForm(s, c){
     const blocks = []; let lastSec = '';
     groupsOf(t).forEach(g => {
       if (g.sec !== lastSec){ blocks.push(el('h3', {class:'sec', text:g.sec})); lastSec = g.sec; }
-      g.items.forEach(([k, l, q]) => {
-        ta[k] = el('textarea', {maxlength:600, style:'min-height:56px', placeholder: q || ''});
+      g.items.forEach(([k, l, q, mx]) => {
+        ta[k] = el('textarea', {maxlength: mx || 600, style:'min-height:' + (mx && mx <= 200 ? 48 : 56) + 'px', placeholder: q || ''});
         ta[k].value = old[k] != null ? old[k] : (cf[k] || '');
-        blocks.push(el('div', {class:'field'}, el('label', {text: itemLabel(g, l)}), q ? el('div', {class:'hint', style:'margin:-2px 0 4px;', text:q}) : null, ta[k]));
+        const cn = mx ? el('div', {class:'hint', style:'text-align:right; margin-top:2px;'}) : null;
+        if (cn){ const upd = () => { cn.textContent = `${ta[k].value.length}/${mx}`; }; ta[k].addEventListener('input', upd); upd(); }
+        blocks.push(el('div', {class:'field'}, el('label', {text: itemLabel(g, l)}), q ? el('div', {class:'hint', style:'margin:-2px 0 4px;', text:q}) : null, ta[k], cn));
       });
     });
     fbox.append(...blocks);
@@ -847,7 +854,7 @@ function counselForm(s, c){
       const r = await aiSummarize(text, s, f.kind.value, key, f.ftype.value);
       let n = 0;
       const put = (el_, v) => { v = String(v == null ? '' : v).trim(); if (v && (over.checked || !el_.value.trim())){ el_.value = v; n++; } };
-      keysOf(f.ftype.value).forEach(k => put(ta[k], r[k]));
+      keysOf(f.ftype.value).forEach(k => put(ta[k], String(r[k] == null ? '' : r[k]).slice(0, Number(ta[k].getAttribute('maxlength')) || 600)));
       put(f.sum, String(r.summary || '').slice(0, 500)); f.sum.dispatchEvent(new Event('input'));
       put(f.fu, String(r.follow_up || '').slice(0, 200));
       const sc = scan(f.sum.value, f.fu.value, ...keysOf(f.ftype.value).map(k => ta[k].value));
@@ -921,7 +928,7 @@ function counselForm(s, c){
       el('div', {style:'display:flex; gap:8px; align-items:center; flex-wrap:wrap;'}, f.dur, [15, 30, 45, 60, 90].map(m =>
         el('button', {class:'btn sm', type:'button', text:`${m}분`, onclick: () => { f.dur.value = m; }})))),
     fbox,
-    el('h3', {class:'sec', text:'종합'}),
+    el('h3', {class:'sec', text:'상담 요약·후속 조치'}),
     el('div', {class:'field'}, el('label', {}, '상담 종합 요약 ', el('span', {class:'req', text:'*'})), f.sum, cnt),
     el('div', {class:'row2'},
       el('div', {class:'field'}, el('label', {}, '후속 조치 ', el('span', {class:'opt', text:'(선택)'})), f.fu),
