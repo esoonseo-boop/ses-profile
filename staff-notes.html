@@ -89,6 +89,8 @@
   .tl{position:relative; margin:4px 0 0 6px; padding-left:18px; border-left:2px solid var(--line);}
   .no{display:inline-flex; align-items:center; justify-content:center; min-width:22px; height:22px; padding:0 6px; margin-right:8px; border-radius:999px; background:var(--brand); color:#fff; font-size:12px; font-weight:700; flex:none;}
   .rowitem .no{margin-right:0;}
+  .pbar{display:flex; height:8px; border-radius:99px; background:#E8ECF4; overflow:hidden; margin-top:4px;}
+  .pbar i{display:block; height:100%;} .pbar .g{background:#16A34A;} .pbar .b{background:var(--brand);} .pbar .a{background:#F59E0B;}
   .evs{display:grid; grid-template-columns:repeat(auto-fit,minmax(92px,1fr)); gap:8px; margin:10px 0;}
   .ev{background:#F4F7FF; border-radius:12px; padding:10px 12px; display:flex; flex-direction:column; gap:2px;}
   .ev b{font-size:18px; color:var(--brand);}
@@ -439,10 +441,11 @@ function renderLogin(msg){
 async function loadAll(){
   // 서버(RLS)가 같은 지점 데이터만 돌려주며, 화면에서도 내 지점으로 한 번 더 제한한다
   const br = '&branch_name=eq.' + encodeURIComponent(me.branch_name);
-  const [a, b, fr] = await Promise.all([
+  const [a, b, fr, ev] = await Promise.all([
     api('/rest/v1/staff_members?select=*' + br + '&order=created_at.asc'),
     api('/rest/v1/staff_counsels?select=*' + br + '&order=counsel_date.desc,created_at.desc'),
-    api('/rest/v1/staff_followups?select=*' + br + '&order=sort_order.asc,created_at.asc')
+    api('/rest/v1/staff_followups?select=*' + br + '&order=sort_order.asc,created_at.asc'),
+    api('/rest/v1/staff_evaluations?select=*' + br + '&order=period.desc')
   ]);
   if (!a.ok || !b.ok){
     const code = a.ok ? b.status : a.status;
@@ -450,7 +453,7 @@ async function loadAll(){
     if (code === 404) return 'notable';
     return 'error';
   }
-  S.staff = await a.json(); S.counsels = await b.json(); S.followups = fr.ok ? await fr.json() : []; return 'ok';
+  S.staff = await a.json(); S.counsels = await b.json(); S.followups = fr.ok ? await fr.json() : []; S.evals = ev.ok ? await ev.json() : []; return 'ok';
 }
 async function loadMe(){
   const res = await api('/rest/v1/proposal_admins?select=email,role,display_name,branch_name,manager_name&email=eq.' + encodeURIComponent((session.email || '').toLowerCase()));
@@ -501,10 +504,10 @@ const staffById = (id) => S.staff.find(s => s.id === id);
 /* ---------- 화면 ---------- */
 function render(){
   const tabs = el('div', {class:'tabs'},
-    [['dash','오늘 할 일'],['fu','후속 점검'],['staff','직원 목록'],['hist','상담 이력']].map(([k, t]) =>
+    [['dash','오늘 할 일'],['fu','후속 점검'],['staff','직원 목록'],['hist','상담 이력'],['eval','인사평가']].map(([k, t]) =>
       el('button', {class:'tab' + ((S.view === k || (S.view === 'detail' && k === 'staff')) ? ' active' : ''), type:'button', text:t,
         onclick: () => { S.view = k; S.sel = null; S.editStaff = false; S.editCounsel = null; render(); }})));
-  const body = S.view === 'dash' ? viewDash() : S.view === 'fu' ? viewFollow() : S.view === 'staff' ? viewStaff() : S.view === 'hist' ? viewHistory() : viewDetail();
+  const body = S.view === 'dash' ? viewDash() : S.view === 'fu' ? viewFollow() : S.view === 'staff' ? viewStaff() : S.view === 'hist' ? viewHistory() : S.view === 'eval' ? viewEval() : viewDetail();
   app.replaceChildren(
     el('div', {class:'top'}, el('div', {class:'top-inner'}, el('h1', {text: me ? `${me.branch_name} 직원 상담 관리` : '직원 상담 관리'}),
       el('span', {class:'who', text: me ? `${me.display_name || me.manager_name || ''} 지점장`.trim() : ''}),
@@ -517,7 +520,7 @@ function render(){
 
 function viewDash(){
   const m = summary(), today = m.today;
-  const nm = (st) => st ? [st.initials, st.name_masked].filter(Boolean).join(' · ') : '?';
+  const nm = (st) => st ? [st.initials, st.name_masked].filter(Boolean).join(' · ') : '';
   const toNew = (id) => { openStaff(id); S.dtab = 'new'; render(); };      // 상담 등록 탭으로 바로 이동
   const items = [];
   m.open.forEach(fu => { const st = staffById(fu.staff_id), late = fuLate(fu), c = S.counsels.find(x => x.id === fu.counsel_id);
@@ -529,12 +532,15 @@ function viewDash(){
   m.soon.forEach(i => { const d = dayDiff(i.next, today);
     items.push({ k:'soon', pri: d < 0 ? 0 : 1, sort: i.next, label:'상담 예정', badge: [d < 0 ? 'red' : 'amber', d < 0 ? `${-d}일 지남` : d === 0 ? '오늘' : `D-${d}`],
       st: i.s, title: `예정일 ${fmtD(i.next)}`, sub: [i.s.team, i.s.rank_title].filter(Boolean).join(' · '), go: () => toNew(i.s.id) }); });
+  { const cur = curPeriod(), left = evalPending(cur);
+    if (inEvalSeason() && left.length) items.push({ k:'eval', pri:1, sort:'0', label:'인사평가', badge:['amber', `미제출 ${left.length}명`], st:null,
+      title:`${cur} 인사평가 의견 미제출 ${left.length}명`, sub:'인사평가 탭에서 현황을 확인하세요', go: () => { S.view = 'eval'; render(); } }); }
   m.gapList.forEach(i => items.push({ k:'gap', pri:3, sort:'9999', label:'상담 공백', badge: ['amber', i.gap == null ? '첫 상담 필요' : `${i.gap}일째`],
     st: i.s, title: i.gap == null ? '상담 기록 없음' : `마지막 상담 ${fmtD(i.last.counsel_date)}`, sub: [i.s.team, i.s.rank_title].filter(Boolean).join(' · '), go: () => toNew(i.s.id) }));
   items.sort((a, b) => a.pri - b.pri || String(a.sort).localeCompare(String(b.sort)));
   const cnt = (k) => k === 'all' ? items.length : items.filter(x => x.k === k).length;
   const f = S.dfilter || 'all';
-  const seg = el('div', {class:'seg', role:'tablist'}, [['all','전체'], ['follow','후속 조치'], ['check','효과 확인'], ['soon','상담 예정'], ['gap','상담 공백']].map(([k, t]) =>
+  const seg = el('div', {class:'seg', role:'tablist'}, [['all','전체'], ['follow','후속 조치'], ['check','효과 확인'], ['soon','상담 예정'], ['gap','상담 공백'], ['eval','인사평가']].map(([k, t]) =>
     el('button', {class:'seg-b' + (f === k ? ' on' : ''), type:'button', text:`${t} ${cnt(k)}`, onclick: () => { S.dfilter = k; render(); }})));
   const rows = items.filter(x => f === 'all' || x.k === f).map((x, i) => {
     return el('div', {class:'rowitem'},
@@ -645,7 +651,7 @@ function staffForm(s){
       !isNew ? confirmButton('직원 삭제', '정말 삭제 (상담 이력도 함께 삭제)', async () => {
         const res = await api('/rest/v1/staff_members?id=eq.' + s.id, { method:'DELETE' });
         if (!res.ok){ toast(await errMsg(res, '삭제하지 못했습니다.'), 'err'); return; }
-        S.staff = S.staff.filter(x => x.id !== s.id); S.counsels = S.counsels.filter(c => c.staff_id !== s.id); S.followups = S.followups.filter(f => f.staff_id !== s.id);
+        S.staff = S.staff.filter(x => x.id !== s.id); S.counsels = S.counsels.filter(c => c.staff_id !== s.id); S.followups = S.followups.filter(f => f.staff_id !== s.id); S.evals = (S.evals || []).filter(e => e.staff_id !== s.id);
         S.view = 'staff'; S.sel = null; S.editStaff = false; toast('삭제했습니다.'); render();
       }) : null));
 }
@@ -1162,8 +1168,11 @@ function evalCard(s){
   const all = countsOf(s.id);
   const periods = [...new Set(all.map(c => c.period).filter(Boolean))];
   const st = S.ev = S.ev || {};
-  const m = st[s.id] = st[s.id] || { period: periods[0] || '', text: '' };
+  const m = st[s.id] = st[s.id] || { period: periods[0] || '', text: '', status: 'draft', ai: '', grade: '' };
   if (m.period && !periods.includes(m.period)) m.period = periods[0] || '';
+  const saved = () => (S.evals || []).find(e => e.staff_id === s.id && e.period === m.period);
+  if (!m.loaded && saved()){ const e = saved(); m.text = e.opinion || ''; m.status = e.status; m.ai = e.ai_draft || ''; m.grade = e.grade || ''; }
+  m.loaded = true;
   const stats = el('div', {class:'evs'});
   const ta = el('textarea', {rows:6, maxlength:1000, placeholder:'‘의견 초안 작성’을 누르면 AI가 상담·후속 조치 기록으로 초안을 만듭니다. 직접 고쳐서 복사하세요.', 'aria-label':'인사평가 의견'}); ta.value = m.text;
   ta.addEventListener('input', () => { m.text = ta.value; });
@@ -1176,8 +1185,36 @@ function evalCard(s){
     stats.replaceChildren(cell(d.cs.length + '회', '상담'), cell(d.min ? fmtMin(d.min) : '-', '소요시간'), cell(d.fus.length ? `${d.done}/${d.fus.length}` : '-', '후속 조치 완료'),
       cell(d.chk ? `${d.chkDone}/${d.chk}` : '-', '효과 확인'));
   };
-  sel.addEventListener('change', () => { m.period = sel.value; draw(); });
+  const stSel = el('select', {'aria-label':'상태'}, Object.entries(EV_STATUS).map(([v, t]) => el('option', {value:v, text:t})));
+  stSel.value = m.status; stSel.addEventListener('change', () => { m.status = stSel.value; });
+  const gradeIn = el('input', {type:'text', maxlength:10, list:'ev-grades', placeholder:'예: A, 우수 (선택)', 'aria-label':'평가 등급'}); gradeIn.value = m.grade || '';
+  gradeIn.addEventListener('input', () => { m.grade = gradeIn.value; });
+  const gradeList = el('datalist', {id:'ev-grades'}, ['S','A','B','C','D','탁월','우수','보통','미흡'].map(v => el('option', {value:v})));
+  const loadSaved = () => { const e = saved(); m.text = e ? (e.opinion || '') : ''; m.status = e ? e.status : 'draft'; m.ai = e ? (e.ai_draft || '') : ''; m.grade = e ? (e.grade || '') : ''; ta.value = m.text; stSel.value = m.status; gradeIn.value = m.grade;
+    msg.className = 'hint'; msg.textContent = e ? `저장된 의견을 불러왔습니다. (${EV_STATUS[e.status]})` : ''; };
+  sel.addEventListener('change', () => { m.period = sel.value; draw(); loadSaved(); });
   draw();
+  const saveBtn = el('button', {class:'btn primary', type:'button', text:'저장'});
+  saveBtn.onclick = async () => {
+    msg.className = 'hint'; msg.textContent = '';
+    const txt = ta.value.trim();
+    if (!m.period){ msg.className = 'hint err'; msg.textContent = '저장하려면 평가 기간을 선택해 주세요.'; return; }
+    if (!txt){ msg.className = 'hint err'; msg.textContent = '저장할 의견을 입력해 주세요.'; return; }
+    const sc = scan(txt);
+    if (sc.block.length){ msg.className = 'hint err'; msg.textContent = `입력할 수 없는 정보가 있습니다: ${sc.block.join(', ')}`; return; }
+    if (sc.warn.length && !saveBtn._w){ saveBtn._w = true; msg.className = 'hint warn'; msg.textContent = `민감할 수 있는 표현(${sc.warn.join(', ')})이 있습니다. 구체 내용은 빼고 적어 주세요. 그대로 저장하려면 한 번 더 누르세요.`; return; }
+    saveBtn._w = false; m.text = txt; const d = evalData(s, m.period), old = saved();
+    const body = { branch_name: me.branch_name, staff_id: s.id, period: m.period, status: m.status, opinion: txt, ai_draft: (m.ai || (old && old.ai_draft) || '').slice(0, 1000) || null,
+      grade: gradeIn.value.trim() || null, counsel_cnt: d.cs.length, fu_total: d.fus.length, fu_done: d.done, updated_at: new Date().toISOString(),
+      evaluated_on: old && old.evaluated_on ? old.evaluated_on : todayStr(), submitted_on: m.status === 'submitted' ? ((old && old.submitted_on) || todayStr()) : null };
+    saveBtn.disabled = true;
+    try{
+      const res = await api('/rest/v1/staff_evaluations?on_conflict=staff_id,period', { method:'POST', headers:{ Prefer:'resolution=merge-duplicates,return=representation' }, body });
+      if (!res.ok){ msg.className = 'hint err'; msg.textContent = await errMsg(res, '저장하지 못했습니다.'); }
+      else { const row = (await res.json())[0]; S.evals = (S.evals || []).filter(e => !(e.staff_id === s.id && e.period === m.period)); S.evals.push(row); toast('인사평가 의견을 저장했습니다. (' + EV_STATUS[m.status] + ')'); render(); return; }
+    }catch(e){ msg.className = 'hint err'; msg.textContent = '네트워크 오류로 저장하지 못했습니다.'; }
+    saveBtn.disabled = false;
+  };
   const gen = el('button', {class:'btn primary', type:'button', text:'의견 초안 작성 (AI)'});
   gen.onclick = async () => {
     const d = evalData(s, m.period);
@@ -1187,7 +1224,7 @@ function evalCard(s){
       const res = await api('/functions/v1/staff-ai', { method:'POST', body:{ system: EVAL_SYSTEM, user: evalPrompt(s, d, m.period) } });
       let j = {}; try{ j = await res.json(); }catch(e){}
       if (!res.ok) throw new Error(j.error || j.message || ('AI 요청에 실패했습니다. (' + res.status + ')'));
-      m.text = evalText(j.text); ta.value = m.text;
+      m.text = evalText(j.text); m.ai = m.text; ta.value = m.text;
       msg.textContent = `초안 ${m.text.length}자 · 기록과 맞는지 확인하고 수정해서 사용하세요.`;
     }catch(e){ msg.className = 'hint err'; msg.textContent = e.message || 'AI 작성에 실패했습니다.'; }
     gen.disabled = false; gen.textContent = '의견 초안 작성 (AI)';
@@ -1197,10 +1234,83 @@ function evalCard(s){
     el('p', {class:'desc', text:'평가 기간을 고르면 상담·후속 조치 현황을 요약하고, 의견 초안을 만들어 줍니다.'}),
     el('div', {class:'field'}, el('label', {text:'평가 기간'}), sel),
     stats, ta,
-    el('div', {class:'actions', style:'margin-top:8px;'}, gen,
+    el('div', {class:'row2', style:'margin-top:8px;'}, el('div', {class:'field'}, el('label', {text:'저장 상태'}), stSel), el('div', {class:'field'}, el('label', {text:'평가 등급 (선택)'}), gradeIn, gradeList)),
+    el('div', {class:'actions', style:'margin-top:8px;'}, gen, saveBtn,
       el('button', {class:'btn', type:'button', text:'의견 복사', onclick: () => { if (!ta.value.trim()) toast('복사할 의견이 없습니다.', 'err'); else copyText(ta.value.trim(), '의견을 복사했습니다.'); }}),
       el('button', {class:'btn', type:'button', text:'후속 조치 이력 복사', onclick: () => { const t = followSummaryText(s); if (!t) toast('복사할 후속 조치가 없습니다.', 'err'); else copyText(t, '후속 조치 이력을 복사했습니다.'); }})),
-    msg);
+    msg,
+    evalHistory(s, (e) => { m.period = e.period; m.loaded = false; render(); }));
+}
+const EV_STATUS = { draft:'작성 중', final:'확정', submitted:'제출 완료' };
+const EV_BADGE = { draft:'gray', final:'blue', submitted:'green' };
+function evalHistory(s, onEdit){
+  const list = (S.evals || []).filter(e => e.staff_id === s.id).sort((a, b) => b.period.localeCompare(a.period, 'ko'));
+  if (!list.length) return null;
+  return el('div', {style:'margin-top:16px; border-top:1px solid var(--line); padding-top:12px;'},
+    el('div', {class:'msec', text:`평가 이력 (${list.length})`}),
+    el('div', {class:'tl', style:'margin-top:8px;'}, list.map((e, i) => el('div', {class:'tli'},
+      el('div', {class:'d'}, el('span', {class:'no', text:list.length - i}), el('b', {text:e.period, style:'margin-right:8px;'}),
+        el('span', {class:'badge ' + EV_BADGE[e.status], text:EV_STATUS[e.status]}),
+        el('span', {class:'badge gray', text:`상담 ${e.counsel_cnt}회 · 후속 조치 ${e.fu_done}/${e.fu_total}`}),
+        e.grade ? el('span', {class:'badge', text:'등급 ' + e.grade}) : null,
+        e.submitted_on ? el('span', {style:'margin-left:6px;', text:`제출 ${fmtD(e.submitted_on)}`}) : null),
+      el('div', {class:'sm-text', text:e.opinion || ''}),
+      el('div', {class:'actions', style:'margin-top:6px;'},
+        el('button', {class:'btn sm', type:'button', text:'불러오기·수정', onclick: () => onEdit(e)}),
+        el('button', {class:'btn sm', type:'button', text:'복사', onclick: () => copyText(e.opinion || '', '의견을 복사했습니다.')}),
+        confirmButton('삭제', '정말 삭제', async () => {
+          const res = await api('/rest/v1/staff_evaluations?id=eq.' + e.id, { method:'DELETE' });
+          if (!res.ok){ toast(await errMsg(res, '삭제하지 못했습니다.'), 'err'); return; }
+          S.evals = S.evals.filter(x => x.id !== e.id); toast('삭제했습니다.'); render();
+        }))))));
+}
+
+/* ---------- 인사평가 현황판 ---------- */
+const curPeriod = () => { const d = new Date(); return `${String(d.getFullYear()).slice(2)}년 ${d.getMonth() < 6 ? '상반기' : '하반기'}`; };
+const inEvalSeason = () => { const mo = new Date().getMonth(); return mo >= 9 || (mo >= 3 && mo <= 5); };   // 10~12월, 4~6월
+const evalOf = (sid, period) => (S.evals || []).find(e => e.staff_id === sid && e.period === period);
+const evalPending = (period) => S.staff.filter(x => x.active && !((evalOf(x.id, period) || {}).status === 'submitted'));
+function viewEval(){
+  const periods = [...new Set([curPeriod(), ...S.counsels.map(c => c.period), ...(S.evals || []).map(e => e.period)].filter(Boolean))].sort((a, b) => b.localeCompare(a, 'ko'));
+  if (!S.evPeriod || !periods.includes(S.evPeriod)) S.evPeriod = curPeriod();
+  const sel = el('select', {'aria-label':'평가 기간'}, periods.map(p => el('option', {value:p, text:p}))); sel.value = S.evPeriod;
+  sel.addEventListener('change', () => { S.evPeriod = sel.value; render(); });
+  const list = S.staff.filter(x => x.active);
+  const rows = list.map(x => ({ x, e: evalOf(x.id, S.evPeriod), n: countsOf(x.id).filter(c => c.period === S.evPeriod).length }));
+  const cnt = { none:0, draft:0, final:0, submitted:0 }; rows.forEach(o => { cnt[o.e ? o.e.status : 'none']++; });
+  const total = rows.length || 1;
+  const pct = (k) => Math.round(cnt[k] / total * 100);
+  const lab = { none:['미작성','gray'], draft:['작성 중','amber'], final:['확정','blue'], submitted:['제출 완료','green'] };
+  const nm = (st) => [st.initials, st.name_masked].filter(Boolean).join(' · ');
+  const cell = (k) => el('div', {class:'ev'}, el('b', {text:cnt[k] + '명'}), el('span', {text:lab[k][0]}));
+  const items = rows.map((o, i) => el('div', {class:'rowitem click', onclick: () => {
+      S.ev = S.ev || {}; S.ev[o.x.id] = { period: S.evPeriod, text:'', status:'draft', ai:'', loaded:false };
+      openStaff(o.x.id); S.dtab = 'info'; render(); window.scrollTo(0, 0); }},
+    el('span', {class:'no', text:i + 1}), el('div', {class:'ava', text:o.x.initials}),
+    el('div', {class:'grow'}, el('div', {class:'t', text:nm(o.x) || o.x.initials}),
+      el('div', {class:'s', text: o.e ? (o.e.opinion || '').slice(0, 60) + ((o.e.opinion || '').length > 60 ? '…' : '') : (o.n ? `${S.evPeriod} 상담 ${o.n}회 · 의견 작성 전` : `${S.evPeriod} 상담 기록 없음`)})),
+    o.e && o.e.grade ? el('span', {class:'badge', text:o.e.grade}) : null,
+    el('span', {class:'badge ' + lab[o.e ? o.e.status : 'none'][1], text:lab[o.e ? o.e.status : 'none'][0]})));
+  return el('div', {},
+    el('div', {class:'card'}, el('h2', {text:'인사평가 현황'}),
+      el('p', {class:'desc', text:'재직 직원의 평가 의견 작성 상태입니다. 직원을 누르면 의견 작성·저장 화면으로 이동합니다.'}),
+      el('div', {class:'field'}, el('label', {text:'평가 기간'}), sel),
+      el('div', {class:'evs'}, cell('none'), cell('draft'), cell('final'), cell('submitted')),
+      el('div', {class:'pbar', title:`제출 ${pct('submitted')}% · 확정 ${pct('final')}%`},
+        el('i', {class:'g', style:`width:${pct('submitted')}%`}), el('i', {class:'b', style:`width:${pct('final')}%`}), el('i', {class:'a', style:`width:${pct('draft')}%`})),
+      el('div', {class:'hint', style:'margin:6px 0 10px;', text:`재직 ${rows.length}명 · 제출 ${cnt.submitted}명 · 남은 ${rows.length - cnt.submitted}명`}),
+      rows.length ? el('div', {class:'list'}, items) : el('div', {class:'empty', text:'재직 중인 직원이 없습니다.'}),
+      rows.length ? el('div', {class:'actions', style:'margin-top:12px;'},
+        el('button', {class:'btn sm', type:'button', text:'CSV 내려받기 (' + S.evPeriod + ')', onclick: () => downloadEvalCsv(S.evPeriod)})) : null));
+}
+function downloadEvalCsv(period){
+  const head = ['번호','직원(이니셜)','평가 기간','상태','등급','상담 횟수','후속 조치 완료/전체','평가 의견','평가일','제출일'];
+  const rows = S.staff.filter(x => x.active).map((x, i) => { const e = evalOf(x.id, period);
+    return [i + 1, x.initials, period, e ? EV_STATUS[e.status] : '미작성', e && e.grade, e ? e.counsel_cnt : countsOf(x.id).filter(c => c.period === period).length, e ? `${e.fu_done}/${e.fu_total}` : '', e && e.opinion, e && e.evaluated_on, e && e.submitted_on]; });
+  const csv = '\ufeff' + [head, ...rows].map(r => r.map(csvCell).join(',')).join('\r\n');
+  const a = el('a', {href: URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8'})), download: `인사평가_${period.replace(/\s/g, '')}_${todayStr()}.csv`});
+  document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  toast('CSV를 내려받았습니다. 이니셜과 평가 의견만 포함되어 있습니다.');
 }
 
 /* ---------- 시작 ---------- */
