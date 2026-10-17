@@ -1135,7 +1135,15 @@ const EVAL_SYSTEM = `당신은 은행 지점장의 인사평가 의견 작성을
 - 업무 사실 중심으로 쓰고 감정·성격 단정 표현은 피합니다. 기록에 없는 내용은 만들지 않습니다.
 - 건강·가정사·징계 등 민감 내용은 쓰지 않습니다. 이름 대신 "직원"으로 지칭합니다.
 - 공문서체(~함, ~임, ~하고 있음)로 간결하게, 전체 300자 내외, 줄바꿈 없이 이어서 한 문단으로 씁니다.
-- 설명·머리말 없이 의견 본문만 출력합니다.`;
+- 출력은 반드시 JSON 한 개: {"opinion":"의견 본문"}`;
+function evalText(raw){
+  let t = String(raw || '').trim();
+  try{ const o = JSON.parse(t.replace(/^```(?:json)?\s*|\s*```$/g, ''));
+    if (typeof o === 'string') t = o;
+    else if (o && typeof o === 'object'){ const v = o.opinion ?? Object.values(o).find(x => typeof x === 'string'); if (typeof v === 'string') t = v; }
+  }catch(e){ const m = t.match(/"[a-z_]+"\s*:\s*"([\s\S]*?)"\s*[,}]/); if (m) t = m[1].replace(/\\n/g, ' ').replace(/\\"/g, '"'); }
+  return t.replace(/\s*\n+\s*/g, ' ').trim();
+}
 function evalData(s, period){
   const cs = countsOf(s.id).filter(c => !period || c.period === period);
   const fus = cs.flatMap(c => fusOf(c.id));
@@ -1179,7 +1187,7 @@ function evalCard(s){
       const res = await api('/functions/v1/staff-ai', { method:'POST', body:{ system: EVAL_SYSTEM, user: evalPrompt(s, d, m.period) } });
       let j = {}; try{ j = await res.json(); }catch(e){}
       if (!res.ok) throw new Error(j.error || j.message || ('AI 요청에 실패했습니다. (' + res.status + ')'));
-      m.text = String(j.text || '').replace(/\s*\n+\s*/g, ' ').trim(); ta.value = m.text;
+      m.text = evalText(j.text); ta.value = m.text;
       msg.textContent = `초안 ${m.text.length}자 · 기록과 맞는지 확인하고 수정해서 사용하세요.`;
     }catch(e){ msg.className = 'hint err'; msg.textContent = e.message || 'AI 작성에 실패했습니다.'; }
     gen.disabled = false; gen.textContent = '의견 초안 작성 (AI)';
