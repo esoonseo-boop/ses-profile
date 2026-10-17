@@ -87,6 +87,8 @@
   h3.sec{font-size:14px; margin:16px 0 8px; color:var(--ink-strong);} h3.sec:first-child{margin-top:0;}
 
   .tl{position:relative; margin:4px 0 0 6px; padding-left:18px; border-left:2px solid var(--line);}
+  .no{display:inline-flex; align-items:center; justify-content:center; min-width:22px; height:22px; padding:0 6px; margin-right:8px; border-radius:999px; background:var(--brand); color:#fff; font-size:12px; font-weight:700; flex:none;}
+  .rowitem .no{margin-right:0;}
   .tli{position:relative; margin-bottom:14px;}
   .tli::before{content:""; position:absolute; left:-25px; top:6px; width:10px; height:10px; border-radius:50%; background:var(--brand); border:2px solid #fff; box-shadow:0 0 0 2px var(--line);}
   .tli .d{font-size:12.5px; color:var(--ink-soft); font-weight:600;}
@@ -530,8 +532,9 @@ function viewDash(){
   const f = S.dfilter || 'all';
   const seg = el('div', {class:'seg', role:'tablist'}, [['all','전체'], ['follow','후속 조치'], ['check','효과 확인'], ['soon','상담 예정'], ['gap','상담 공백']].map(([k, t]) =>
     el('button', {class:'seg-b' + (f === k ? ' on' : ''), type:'button', text:`${t} ${cnt(k)}`, onclick: () => { S.dfilter = k; render(); }})));
-  const rows = items.filter(x => f === 'all' || x.k === f).map(x => {
+  const rows = items.filter(x => f === 'all' || x.k === f).map((x, i) => {
     return el('div', {class:'rowitem'},
+      el('span', {class:'no', text:i+1}),
       el('div', {class:'grow click', style:'cursor:pointer', onclick: () => x.fu ? openFollowModal(x.fu) : x.go()},
         el('div', {class:'t'}, el('span', {class:'badge gray', text:x.label}), ' ', x.title),
         el('div', {class:'s', text: [nm(x.st), x.sub].filter(Boolean).join(' · ')})),
@@ -699,10 +702,10 @@ function viewHistory(){
       && (!kw || (() => { const st = staffById(c.staff_id) || {}; return [st.initials, st.name_masked, st.team, st.rank_title, c.summary, ...fusOf(c.id).flatMap(f => [f.content, f.result]), c.kind, c.period, ...Object.values(c.form || {})].filter(Boolean).join(' ').toLowerCase().includes(kw); })()));
     const tot = rows.reduce((a, c) => a + (c.duration_min || 0), 0);
     cnt.textContent = `총 ${rows.length}건` + (rows.length !== S.counsels.length ? ` (전체 ${S.counsels.length}건)` : '') + (tot ? ` · 소요시간 합계 ${fmtMin(tot)}` : '');
-    list.replaceChildren(...(rows.length ? rows.map(c => {
+    list.replaceChildren(...(rows.length ? rows.map((c, i) => {
       const st = staffById(c.staff_id);
       return el('div', {class:'tli'},
-        el('div', {class:'d'}, el('b', {text: st ? [st.initials, st.name_masked].filter(Boolean).join(' · ') : '(삭제된 직원)', style:'margin-right:8px;'}),
+        el('div', {class:'d'}, el('span', {class:'no', text:i+1}), el('b', {text: st ? [st.initials, st.name_masked].filter(Boolean).join(' · ') : '(삭제된 직원)', style:'margin-right:8px;'}),
           el('span', {class:'badge', text:c.kind}), el('span', {class:'badge gray', text: FORM_TYPES[c.form_type] || '인사상담'}),
           c.period ? el('span', {class:'badge gray', text:c.period}) : null, fmtD(c.counsel_date), c.duration_min ? el('span', {class:'badge gray', style:'margin-left:6px;', text:'⏱ ' + fmtMin(c.duration_min)}) : null),
         el('div', {class:'sm-text clk', title:'눌러서 상세 보기', onclick: () => openCounsel(c), text:c.summary}), formView(c),
@@ -753,9 +756,9 @@ function viewFollow(){
     el('button', {class:'seg-b' + (F === k ? ' on' : ''), type:'button', text:`${t} ${sets[k].length}`, onclick: () => { S.ffilter = k; render(); }})));
   const list = sets[F].slice().sort((a, b) => (fuLate(b) ? 1 : 0) - (fuLate(a) ? 1 : 0) || (F === 'check' ? (a.check_on || '').localeCompare(b.check_on || '') : (a.due_date || '9999').localeCompare(b.due_date || '9999')));
   const byStaff = new Map(); list.forEach(f => { if (!byStaff.has(f.staff_id)) byStaff.set(f.staff_id, []); byStaff.get(f.staff_id).push(f); });
-  const groups = [...byStaff.entries()].map(([sid, arr]) => { const st = staffById(sid);
+  const groups = [...byStaff.entries()].map(([sid, arr], gi) => { const st = staffById(sid);
     return el('div', {class:'tli', style:'padding-bottom:6px;'},
-      el('div', {class:'d'}, el('b', {text: st ? [st.initials, st.name_masked].filter(Boolean).join(' · ') : '(삭제된 직원)', style:'margin-right:8px;'}),
+      el('div', {class:'d'}, el('span', {class:'no', text:gi+1}), el('b', {text: st ? [st.initials, st.name_masked].filter(Boolean).join(' · ') : '(삭제된 직원)', style:'margin-right:8px;'}),
         el('span', {class:'badge gray', text:`${arr.length}건`}),
         st ? el('button', {class:'btn sm', type:'button', text:'직원 상세', onclick: () => openStaff(sid)}) : null),
       arr.map(f => followRow(f))); });
@@ -780,9 +783,10 @@ function viewStaff(){
     S.staffQ = q.value.trim(); const kw = S.staffQ.toLowerCase();
     const list = S.staff.filter(s => (S.showInactive || s.active) &&
       (!kw || [s.initials, s.name_masked, s.team, s.rank_title, s.duties, s.emp_no].filter(Boolean).join(' ').toLowerCase().includes(kw)));
-    const rows = list.map(s => {
+    const rows = list.map((s, i) => {
       const cs = countsOf(s.id), last = cs[0];
       return el('div', {class:'rowitem click' + (s.active ? '' : ' dim'), onclick: () => openStaff(s.id)},
+        el('span', {class:'no', text:i+1}),
         el('div', {class:'ava', text:s.initials}),
         el('div', {class:'grow'}, el('div', {class:'t'}, [s.name_masked, s.team, s.rank_title, s.duties].filter(Boolean).join(' · ') || '(정보 없음)'),
           el('div', {class:'s', text: last ? `마지막 상담 ${fmtD(last.counsel_date)} (${dayDiff(today, last.counsel_date)}일 전) · 총 ${cs.length}회` : '상담 기록 없음'})),
@@ -1081,9 +1085,9 @@ function viewDetail(){
   if (S.editStaff) return staffForm(s);
   const cs = countsOf(s.id), today = todayStr();
   const editing = S.editCounsel ? cs.find(c => c.id === S.editCounsel) : null;
-  const items = cs.map(c => {
+  const items = cs.map((c, i) => {
     return el('div', {class:'tli'},
-      el('div', {class:'d'}, el('span', {class:'badge', text:c.kind}), el('span', {class:'badge gray', text: FORM_TYPES[c.form_type] || '인사상담'}), c.period ? el('span', {class:'badge gray', text:c.period}) : null, fmtD(c.counsel_date), c.duration_min ? el('span', {class:'badge gray', style:'margin-left:6px;', text:'⏱ ' + fmtMin(c.duration_min)}) : null),
+      el('div', {class:'d'}, el('span', {class:'no', text:cs.length - i}), el('span', {class:'badge', text:c.kind}), el('span', {class:'badge gray', text: FORM_TYPES[c.form_type] || '인사상담'}), c.period ? el('span', {class:'badge gray', text:c.period}) : null, fmtD(c.counsel_date), c.duration_min ? el('span', {class:'badge gray', style:'margin-left:6px;', text:'⏱ ' + fmtMin(c.duration_min)}) : null),
       el('div', {class:'sm-text clk', title:'눌러서 상세 보기', onclick: () => openCounsel(c), text:c.summary}), formView(c),
       fusOf(c.id).map(fu => followRow(fu)),
       c.next_date ? el('div', {class:'s', style:'font-size:12.5px;color:var(--ink-soft);margin-top:3px;', text:`다음 상담 예정 ${fmtD(c.next_date)}`}) : null,
