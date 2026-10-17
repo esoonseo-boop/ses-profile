@@ -1139,6 +1139,7 @@ const EVAL_SYSTEM = `당신은 은행 지점장의 인사평가 의견 작성을
 규칙:
 - 3단 구성: ①관찰된 업무 수행·태도(사실) ②지도·개선 내용과 변화(후속 조치 결과 포함) ③강점과 향후 육성 방향.
 - 업무 사실 중심으로 쓰고 감정·성격 단정 표현은 피합니다. 기록에 없는 내용은 만들지 않습니다.
+- '지점장 추가 참고' 항목이 있으면 지점장이 직접 제공한 사실이므로 기록과 함께 반영합니다. 상충하면 지점장 추가 참고를 우선합니다.
 - 건강·가정사·징계 등 민감 내용은 쓰지 않습니다. 이름 대신 "직원"으로 지칭합니다.
 - 공문서체(~함, ~임, ~하고 있음)로 간결하게, 전체 300자 내외, 줄바꿈 없이 이어서 한 문단으로 씁니다.
 - 출력은 반드시 JSON 한 개: {"opinion":"의견 본문"}`;
@@ -1157,18 +1158,18 @@ function evalData(s, period){
   const chk = fus.filter(f => f.check_on).length, chkDone = fus.filter(f => f.check_on && f.check_done).length;
   return { cs, fus, done, chk, chkDone, min: cs.reduce((a, c) => a + (c.duration_min || 0), 0) };
 }
-function evalPrompt(s, d, period){
+function evalPrompt(s, d, period, extra){
   const parts = d.cs.slice().reverse().map(c => {
     const f = fusOf(c.id).map(x => `  · 후속조치(${x.category}/${FU_STATUS[x.status]}): ${x.content}${x.result ? ' → 결과: ' + x.result : ''}${x.check_note ? ' / 효과: ' + x.check_note : ''}`).join('\n');
     return `[${fmtD(c.counsel_date)} ${c.kind}]\n${c.summary || ''}${f ? '\n' + f : ''}`;
   });
-  return `대상 직원 이니셜: ${s.initials}\n평가 기간: ${period || '전체'}\n\n${parts.join('\n\n')}`;
+  return `대상 직원 이니셜: ${s.initials}\n평가 기간: ${period || '전체'}\n${extra ? `\n[지점장 추가 참고]\n${extra}\n` : ''}\n${parts.join('\n\n')}`;
 }
 function evalCard(s){
   const all = countsOf(s.id);
   const periods = [...new Set(all.map(c => c.period).filter(Boolean))];
   const st = S.ev = S.ev || {};
-  const m = st[s.id] = st[s.id] || { period: periods[0] || '', text: '', status: 'draft', ai: '', grade: '' };
+  const m = st[s.id] = st[s.id] || { period: periods[0] || '', text: '', status: 'draft', ai: '', grade: '', extra: '' };
   if (m.period && !periods.includes(m.period)) m.period = periods[0] || '';
   const saved = () => (S.evals || []).find(e => e.staff_id === s.id && e.period === m.period);
   if (!m.loaded && saved()){ const e = saved(); m.text = e.opinion || ''; m.status = e.status; m.ai = e.ai_draft || ''; m.grade = e.grade || ''; }
@@ -1215,13 +1216,17 @@ function evalCard(s){
     }catch(e){ msg.className = 'hint err'; msg.textContent = '네트워크 오류로 저장하지 못했습니다.'; }
     saveBtn.disabled = false;
   };
+  const extraTa = el('textarea', {rows:3, maxlength:500, placeholder:'예: 업무 지정 후 태도가 개선됨 / 신규 업무 적극 수행 / 팀 분위기 기여 등 (선택 · 실명·민감정보 제외)', 'aria-label':'추가 참고 내용'}); extraTa.value = m.extra || '';
+  extraTa.addEventListener('input', () => { m.extra = extraTa.value; });
   const gen = el('button', {class:'btn primary', type:'button', text:'의견 초안 작성 (AI)'});
   gen.onclick = async () => {
     const d = evalData(s, m.period);
     if (!d.cs.length){ toast('선택한 기간의 상담 기록이 없습니다.', 'err'); return; }
     gen.disabled = true; gen.textContent = '작성 중…'; msg.className = 'hint'; msg.textContent = '';
+    const ex = extraTa.value.trim(), sc = scan(ex);
+    if (sc.block.length){ msg.className = 'hint err'; msg.textContent = `추가 참고 내용에 입력할 수 없는 정보가 있습니다: ${sc.block.join(', ')}`; gen.disabled = false; gen.textContent = '의견 초안 작성 (AI)'; return; }
     try{
-      const res = await api('/functions/v1/staff-ai', { method:'POST', body:{ system: EVAL_SYSTEM, user: evalPrompt(s, d, m.period) } });
+      const res = await api('/functions/v1/staff-ai', { method:'POST', body:{ system: EVAL_SYSTEM, user: evalPrompt(s, d, m.period, ex) } });
       let j = {}; try{ j = await res.json(); }catch(e){}
       if (!res.ok) throw new Error(j.error || j.message || ('AI 요청에 실패했습니다. (' + res.status + ')'));
       m.text = evalText(j.text); m.ai = m.text; ta.value = m.text;
@@ -1233,7 +1238,9 @@ function evalCard(s){
     el('h2', {text:'인사평가 지원'}),
     el('p', {class:'desc', text:'평가 기간을 고르면 상담·후속 조치 현황을 요약하고, 의견 초안을 만들어 줍니다.'}),
     el('div', {class:'field'}, el('label', {text:'평가 기간'}), sel),
-    stats, ta,
+    stats,
+    el('div', {class:'field'}, el('label', {}, '추가 참고 내용 ', el('span', {class:'opt', text:'(선택 · AI 초안에 반영됩니다)'})), extraTa),
+    ta,
     el('div', {class:'row2', style:'margin-top:8px;'}, el('div', {class:'field'}, el('label', {text:'저장 상태'}), stSel), el('div', {class:'field'}, el('label', {text:'평가 등급 (선택)'}), gradeIn, gradeList)),
     el('div', {class:'actions', style:'margin-top:8px;'}, gen, saveBtn,
       el('button', {class:'btn', type:'button', text:'의견 복사', onclick: () => { if (!ta.value.trim()) toast('복사할 의견이 없습니다.', 'err'); else copyText(ta.value.trim(), '의견을 복사했습니다.'); }}),
