@@ -1112,8 +1112,9 @@ function viewDetail(){
           S.counsels = S.counsels.filter(x => x.id !== c.id); S.followups = S.followups.filter(x => x.counsel_id !== c.id); toast('삭제했습니다.'); render();
         })));
   });
+  const nEval = (S.evals || []).filter(e => e.staff_id === s.id).length;
   const tab = S.editCounsel ? 'new' : S.dtab;
-  const dtabs = el('div', {class:'seg', role:'tablist'}, [['info','인사정보'], ['hist',`상담 이력 (${cs.length})`], ['new', editing ? '상담 수정' : '+ 상담 등록']].map(([k, t]) =>
+  const dtabs = el('div', {class:'seg', role:'tablist'}, [['info','인사정보'], ['hist',`상담 이력 (${cs.length})`], ['eval', `인사평가${nEval ? ' (' + nEval + ')' : ''}`], ['new', editing ? '상담 수정' : '+ 상담 등록']].map(([k, t]) =>
     el('button', {class:'seg-b' + (tab === k ? ' on' : ''), type:'button', role:'tab', 'aria-selected': tab === k ? 'true' : 'false', text:t,
       onclick: () => { S.dtab = k; S.editCounsel = null; if (k !== 'new') S.reFrom = null; render(); }})));
   return el('div', {},
@@ -1128,10 +1129,9 @@ function viewDetail(){
         s.memo ? el('div', {class:'hint', style:'margin-top:10px;', text:`메모: ${s.memo}`}) : null,
         el('div', {class:'actions', style:'margin-top:14px;'}, el('button', {class:'btn primary', type:'button', text:'+ 상담 등록', onclick: () => { S.dtab = 'new'; render(); window.scrollTo(0, 0); }}),
           el('button', {class:'btn', type:'button', text:'후속 조치 이력 복사', onclick: () => { const t = followSummaryText(s); if (!t) toast('복사할 후속 조치가 없습니다.', 'err'); else copyText(t, '인사평가 의견 작성용으로 복사했습니다.'); }}))) :
-    tab === 'new' ? counselForm(s, editing) :
+    tab === 'new' ? counselForm(s, editing) : tab === 'eval' ? evalCard(s) :
     el('div', {class:'card'}, el('h2', {text:'상담 이력'}),
-      cs.length ? el('div', {class:'tl', style:'margin-top:12px;'}, items) : el('div', {class:'empty', text:'아직 상담 기록이 없습니다.'})),
-    tab === 'info' ? evalCard(s) : null);
+      cs.length ? el('div', {class:'tl', style:'margin-top:12px;'}, items) : el('div', {class:'empty', text:'아직 상담 기록이 없습니다.'})));
 }
 
 /* ---------- 인사평가 지원 (반기 요약 + 의견 초안) ---------- */
@@ -1234,7 +1234,7 @@ function evalCard(s){
     }catch(e){ msg.className = 'hint err'; msg.textContent = e.message || 'AI 작성에 실패했습니다.'; }
     gen.disabled = false; gen.textContent = '의견 초안 작성 (AI)';
   };
-  return el('div', {class:'card', style:'margin-top:12px;'},
+  return el('div', {class:'card'},
     el('h2', {text:'인사평가 지원'}),
     el('p', {class:'desc', text:'평가 기간을 고르면 상담·후속 조치 현황을 요약하고, 의견 초안을 만들어 줍니다.'}),
     el('div', {class:'field'}, el('label', {text:'평가 기간'}), sel),
@@ -1292,7 +1292,7 @@ function viewEval(){
   const cell = (k) => el('div', {class:'ev'}, el('b', {text:cnt[k] + '명'}), el('span', {text:lab[k][0]}));
   const items = rows.map((o, i) => el('div', {class:'rowitem click', onclick: () => {
       S.ev = S.ev || {}; S.ev[o.x.id] = { period: S.evPeriod, text:'', status:'draft', ai:'', loaded:false };
-      openStaff(o.x.id); S.dtab = 'info'; render(); window.scrollTo(0, 0); }},
+      openStaff(o.x.id); S.dtab = 'eval'; render(); window.scrollTo(0, 0); }},
     el('span', {class:'no', text:i + 1}), el('div', {class:'ava', text:o.x.initials}),
     el('div', {class:'grow'}, el('div', {class:'t', text:nm(o.x) || o.x.initials}),
       el('div', {class:'s', text: o.e ? (o.e.opinion || '').slice(0, 60) + ((o.e.opinion || '').length > 60 ? '…' : '') : (o.n ? `${S.evPeriod} 상담 ${o.n}회 · 의견 작성 전` : `${S.evPeriod} 상담 기록 없음`)})),
