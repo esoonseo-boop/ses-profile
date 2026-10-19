@@ -1399,8 +1399,8 @@ function hqRows(spec, initial){
   return { node: box, add, get, texts: () => rows.flatMap(r => spec.filter(c => c.type === 'text').map(c => r.f[c.k].value)) };
 }
 function openHqModal(iv){
-  const isNew = !iv, prev = isNew ? (S.hq || [])[0] : null, base = iv || prev || {};
-  const clone = (arr) => isNew ? (arr || []).map(o => Object.assign({}, o)) : (arr || []);
+  const isNew = !iv, prev = isNew ? (S.hq || [])[0] : null, base = iv || {};   // 새 면담은 빈 폼(직전 내용은 버튼으로 선택 불러오기)
+  const clone = (arr) => arr || [];
   modalShell(isNew ? '본부 면담 등록' : '본부 면담 수정', (close) => {
     const period = el('input', {type:'text', maxlength:20, value: iv ? iv.period : curPeriod(), placeholder:'예: 26년 하반기'});
     const date = el('input', {type:'date', value: iv ? iv.interview_on : todayStr()});
@@ -1455,7 +1455,7 @@ function openHqModal(iv){
     const sec = (t, ...n) => el('details', {class:'sec', open:true}, el('summary', {text:t}), el('div', {style:'padding:8px 4px 4px;'}, ...n));
     const addBtn = (rows, label) => el('button', {class:'btn sm', type:'button', text:label, onclick: () => rows.add()});
     return [
-      isNew && prev ? el('div', {class:'hint', style:'margin-bottom:6px;', text:'직전 면담(' + prev.period + ')의 승진 추천·이동 희망을 불러왔습니다(영업조직 의견조사는 해당 회차 한정이라 제외). 변경된 부분만 고쳐 주세요.'}) : null,
+      isNew && prev ? el('div', {style:'margin-bottom:8px;'}, el('button', {class:'btn sm', type:'button', text:'직전 면담(' + prev.period + ')의 승진 추천·이동 희망 불러오기', onclick: (e) => { (prev.promo || []).forEach(p => promo.add(Object.assign({}, p))); (prev.moves || []).forEach(m => mov.add(Object.assign({}, m))); e.target.remove(); }})) : null,
       el('div', {class:'row2'}, el('div', {class:'field'}, el('label', {text:'평가 기간'}), period), el('div', {class:'field'}, el('label', {text:'면담일'}), date)),
       el('div', {class:'row2'}, el('div', {class:'field'}, el('label', {}, '면담자 ', el('span', {class:'opt', text:'(선택)'})), who), el('div', {class:'field'}, el('label', {}, '인사 시기 ', el('span', {class:'opt', text:'(예: 2027년 상반기)'})), term)),
       sec('1. 승진 추천', el('div', {class:'hint', text:'직급별 승진대상자 · 직원 선택 후 승진 급·자격요건·순위·추천 사유를 입력합니다.'}), promo.node, addBtn(promo, '+ 추천 대상 추가')),
