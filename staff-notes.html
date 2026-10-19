@@ -1410,7 +1410,7 @@ function openHqModal(iv){
     const vacNone = el('input', {type:'checkbox', checked: iv ? !!iv.vacancy_none : false});
     const vac = hqRows([{k:'staff_id', label:'결원 예정 직원', type:'staff'}, {k:'when', label:'예정 시기(예: 2월초)', max:30, type:'text'}, {k:'reason', label:'결원 사유(육아휴직 등)', max:30, type:'text'}, {k:'note', label:'비고', max:60, type:'text'}], iv ? iv.vacancy : []);
     const mov = hqRows([{k:'staff_id', label:'이동 희망 직원', type:'staff'}, {k:'hope', label:'희망 지역(관내 영업점/관외 본부)', max:40, type:'text'}, {k:'reason', label:'이동 사유', type:'select', opts:HQ_REASONS}], clone(base.moves));
-    const sv = Object.assign({}, base.survey || {});
+    const sv = Object.assign({}, (iv && iv.survey) || {}), hasSv = !!sv.change;   // 영업조직 의견조사는 해당 회차 한정 — 새 면담에 복제하지 않음
     const yn = (v) => { const sel = el('select', {}, Object.entries(HQ_YN).map(([k, t]) => el('option', {value:k, text:t}))); sel.value = v || 'unknown'; return sel; };
     const svChange = yn(sv.change), svOk = yn(sv.personal_ok);
     const ta = (v, ph, mx) => { const t = el('textarea', {maxlength:mx || 1000, placeholder:ph, style:'min-height:70px'}); t.value = v || ''; return t; };
@@ -1433,7 +1433,7 @@ function openHqModal(iv){
       save.disabled = true;
       const body = { branch_name: me.branch_name, period: period.value.trim(), interview_on: date.value, interviewer: who.value.trim() || null, target_term: term.value.trim() || null,
         agenda: agenda.value.trim() || null, notes: notes.value.trim() || null, vacancy_none: !!vacNone.checked, promo: promo.get(), vacancy: vac.get(), moves: mov.get(),
-        survey: { change: svChange.value, change_reason: svReason.value.trim(), expand: svExpand.value.trim(), personal_ok: svOk.value, personal_issue: svIssue.value.trim() }, updated_at: new Date().toISOString() };
+        survey: svSec.open ? { change: svChange.value, change_reason: svReason.value.trim(), expand: svExpand.value.trim(), personal_ok: svOk.value, personal_issue: svIssue.value.trim() } : {}, updated_at: new Date().toISOString() };
       const res = await api(isNew ? '/rest/v1/hq_interviews' : '/rest/v1/hq_interviews?id=eq.' + iv.id, { method: isNew ? 'POST' : 'PATCH', headers:{Prefer:'return=representation'}, body });
       if (!res.ok){ save.disabled = false; msg.className = 'hint err'; msg.textContent = await errMsg(res, '저장하지 못했습니다.'); return; }
       const row = (await res.json())[0];
@@ -1445,19 +1445,23 @@ function openHqModal(iv){
       }
       close(); toast(ok ? '저장했습니다.' : '면담은 저장했지만 이행 항목 일부를 저장하지 못했습니다.', ok ? undefined : 'err'); render();
     };
+    const svSec = el('details', {class:'sec'}, el('summary', {text:'4. 영업조직 운영체계 개선 의견 조사 (이번 회차 한정)'}), el('div', {style:'padding:8px 4px 4px;'},
+        el('div', {class:'field'}, el('label', {text:'신유형 체계(통합고객 1·2팀) 변경 희망'}), svChange), el('div', {class:'field'}, el('label', {text:'희망·미희망 사유 / 다른 유형 의견'}), svReason),
+        el('div', {class:'field'}, el('label', {text:'개인팀 직원 업무영역 확대에 필요한 사항'}), svExpand),
+        el('div', {class:'field'}, el('label', {text:'개인/SOHO팀이 잘 운영되고 있다고 생각하는지'}), svOk), el('div', {class:'field'}, el('label', {text:'개인/SOHO팀 애로사항·의견'}), svIssue)));
+    svSec.open = hasSv; if (!hasSv) svSec.style.display = 'none';
+    const svAdd = el('button', {class:'btn sm', type:'button', text:'+ 이번 회차 의견조사 추가 (일회성)', onclick: () => { svSec.style.display = ''; svSec.open = true; svAdd.remove(); }});
+    if (hasSv) svAdd.remove();
     const sec = (t, ...n) => el('details', {class:'sec', open:true}, el('summary', {text:t}), el('div', {style:'padding:8px 4px 4px;'}, ...n));
     const addBtn = (rows, label) => el('button', {class:'btn sm', type:'button', text:label, onclick: () => rows.add()});
     return [
-      isNew && prev ? el('div', {class:'hint', style:'margin-bottom:6px;', text:'직전 면담(' + prev.period + ')의 승진 추천·이동 희망·의견조사를 불러왔습니다. 변경된 부분만 고쳐 주세요.'}) : null,
+      isNew && prev ? el('div', {class:'hint', style:'margin-bottom:6px;', text:'직전 면담(' + prev.period + ')의 승진 추천·이동 희망을 불러왔습니다(영업조직 의견조사는 해당 회차 한정이라 제외). 변경된 부분만 고쳐 주세요.'}) : null,
       el('div', {class:'row2'}, el('div', {class:'field'}, el('label', {text:'평가 기간'}), period), el('div', {class:'field'}, el('label', {text:'면담일'}), date)),
       el('div', {class:'row2'}, el('div', {class:'field'}, el('label', {}, '면담자 ', el('span', {class:'opt', text:'(선택)'})), who), el('div', {class:'field'}, el('label', {}, '인사 시기 ', el('span', {class:'opt', text:'(예: 2027년 상반기)'})), term)),
       sec('1. 승진 추천', el('div', {class:'hint', text:'직급별 승진대상자 · 직원 선택 후 승진 급·자격요건·순위·추천 사유를 입력합니다.'}), promo.node, addBtn(promo, '+ 추천 대상 추가')),
       sec('2. 인력운용 의견 · 결원 예정', el('label', {class:'inline'}, vacNone, '해당 사항 없음'), vac.node, addBtn(vac, '+ 결원 예정 추가')),
       sec('3. 인력운용 의견 · 이동 희망 직원', el('div', {class:'hint', text:'정기 인사이동 시 관내·관외 이동 희망 직원 (현소속일은 직원 부임일로 표시)'}), mov.node, addBtn(mov, '+ 이동 희망 추가')),
-      sec('4. 영업조직 운영체계 개선 의견 조사',
-        el('div', {class:'field'}, el('label', {text:'신유형 체계(통합고객 1·2팀) 변경 희망'}), svChange), el('div', {class:'field'}, el('label', {text:'희망·미희망 사유 / 다른 유형 의견'}), svReason),
-        el('div', {class:'field'}, el('label', {text:'개인팀 직원 업무영역 확대에 필요한 사항'}), svExpand),
-        el('div', {class:'field'}, el('label', {text:'개인/SOHO팀이 잘 운영되고 있다고 생각하는지'}), svOk), el('div', {class:'field'}, el('label', {text:'개인/SOHO팀 애로사항·의견'}), svIssue)),
+      hasSv ? svSec : el('div', {style:'margin:8px 0;'}, svAdd, svSec),
       sec('5. 기타 건의·요청 / 본부 답변', el('div', {class:'field'}, el('label', {text:'안건·건의 사항'}), agenda), el('div', {class:'field'}, el('label', {text:'본부 답변·합의 사항'}), notes)),
       sec('6. ' + (isNew ? '이행 점검 항목' : '이행 점검 항목 추가'), el('div', {class:'hint', text:'건의·요청 / 본부 지시 · 내용 / 기한'}), act.node, el('button', {class:'btn sm', type:'button', text:'+ 항목 추가', onclick: () => addAct().content.focus()})),
       msg, el('div', {class:'actions', style:'margin-top:12px;'}, save, el('button', {class:'btn sm', type:'button', text:'닫기', onclick: close}))];
