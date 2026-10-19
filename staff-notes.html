@@ -1506,6 +1506,48 @@ function hqActRow(a, refresh){
         if (!res.ok){ toast(await errMsg(res, '삭제하지 못했습니다.'), 'err'); return; }
         S.hqa = S.hqa.filter(x => x.id !== a.id); refresh(); })));
 }
+const HQ_BUCKET = 'interview-files', HQ_MAX = 20 * 1024 * 1024;
+const fmtSize = (n) => n >= 1048576 ? (n / 1048576).toFixed(1) + 'MB' : Math.max(1, Math.round(n / 1024)) + 'KB';
+async function storageCall(method, path, body, type){
+  if (session && session.expires_at - Math.floor(Date.now()/1000) < 60) await refreshSession();
+  return fetch(SUPABASE_URL + '/storage/v1/object/' + HQ_BUCKET + '/' + path, { method, headers: Object.assign({ apikey: SUPABASE_KEY, Authorization: 'Bearer ' + session.access_token }, type ? {'Content-Type': type} : {}), body });
+}
+async function hqSaveFiles(iv, files){
+  const res = await api('/rest/v1/hq_interviews?id=eq.' + iv.id, { method:'PATCH', headers:{Prefer:'return=representation'}, body:{ files, updated_at: new Date().toISOString() } });
+  if (!res.ok) return false; iv.files = files; return true;
+}
+async function hqUpload(iv, file){
+  if (file.size > HQ_MAX){ toast('20MB 이하 파일만 첨부할 수 있습니다.', 'err'); return; }
+  const ext = ((file.name.match(/\.([A-Za-z0-9]{1,5})$/) || [])[1] || 'bin').toLowerCase();
+  const path = 'hq/' + iv.id + '/' + Date.now() + '.' + ext;
+  toast('업로드 중…');
+  const up = await storageCall('POST', path, file, file.type || 'application/octet-stream');
+  if (!up.ok){ toast(await errMsg(up, '업로드하지 못했습니다.'), 'err'); return; }
+  const list = (iv.files || []).concat([{ path, name: file.name.slice(0, 120), size: file.size, at: new Date().toISOString() }]);
+  if (!(await hqSaveFiles(iv, list))){ await storageCall('DELETE', path); toast('파일 정보를 저장하지 못했습니다.', 'err'); return; }
+  toast('첨부했습니다.'); render();
+}
+async function hqOpenFile(f){
+  const res = await storageCall('GET', f.path);
+  if (!res.ok){ toast('파일을 불러오지 못했습니다.', 'err'); return; }
+  const url = URL.createObjectURL(await res.blob()), a = el('a', {href:url, download:f.name, target:'_blank'});
+  document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+function hqFilesBlock(iv){
+  const files = iv.files || [];
+  const input = el('input', {type:'file', accept:'.pdf,.hwp,.hwpx,.doc,.docx,.xls,.xlsx,.ppt,.pptx,image/*', style:'display:none', 'aria-label':'보고서 파일 선택', onchange: () => { const f = input.files[0]; input.value = ''; if (f) hqUpload(iv, f); }});
+  return el('div', {class:'hqb'}, el('div', {class:'msec', text:'제출 보고서 파일 (' + files.length + ')'}),
+    ...files.map(f => el('div', {class:'hql', style:'display:flex; gap:6px; align-items:center; flex-wrap:wrap;'},
+      el('span', {text:'📎 ' + f.name + ' · ' + fmtSize(f.size) + ' · ' + fmtD(f.at.slice(0, 10)), style:'flex:1; min-width:160px; word-break:break-all;'}),
+      el('button', {class:'btn sm', type:'button', text:'열기', onclick: () => hqOpenFile(f)}),
+      confirmButton('삭제', '정말 삭제', async () => {
+        const r = await storageCall('DELETE', f.path);
+        if (!r.ok && r.status !== 404){ toast('파일을 삭제하지 못했습니다.', 'err'); return; }
+        if (await hqSaveFiles(iv, files.filter(x => x.path !== f.path))){ toast('삭제했습니다.'); render(); } else toast('파일 정보를 갱신하지 못했습니다.', 'err'); }))),
+    files.length ? null : el('div', {class:'hint', text:'아직 첨부된 파일이 없습니다.'}),
+    el('div', {class:'hint', style:'margin:4px 0;', text:'본부 제출 보고서(PDF·한글·워드 등, 20MB 이하)를 보관합니다. 지점장만 열람할 수 있습니다.'}),
+    input, el('button', {class:'btn sm', type:'button', text:'+ 파일 첨부', onclick: () => input.click()}));
+}
 function viewHq(){
   const list = S.hq || [], open = hqOpen(), late = open.filter(hqLate).length;
   const items = list.map((iv, i) => {
@@ -1515,6 +1557,7 @@ function viewHq(){
         iv.interviewer ? el('span', {class:'badge gray', style:'margin-left:6px;', text:iv.interviewer}) : null,
         acts.length ? el('span', {class:'badge ' + (done === acts.length ? 'green' : 'amber'), style:'margin-left:6px;', text:`이행 ${done}/${acts.length}`}) : null),
       hqSections(iv),
+      hqFilesBlock(iv),
       iv.agenda ? el('div', {class:'sm-text', text:'안건: ' + iv.agenda}) : null,
       iv.notes ? el('div', {class:'sm-text', text:'본부 답변·합의: ' + iv.notes}) : null,
       acts.map(a => hqActRow(a, () => render())),
@@ -1522,6 +1565,7 @@ function viewHq(){
         el('button', {class:'btn sm', type:'button', text:'수정·항목 추가', onclick: () => openHqModal(iv)}),
         el('button', {class:'btn sm', type:'button', text:'면담 자료 복사', onclick: () => copyText(hqSummaryText(iv), '면담 자료를 복사했습니다.')}),
         confirmButton('면담 삭제', '정말 삭제', async () => {
+          for (const f of (iv.files || [])) await storageCall('DELETE', f.path);
           const res = await api('/rest/v1/hq_interviews?id=eq.' + iv.id, { method:'DELETE' });
           if (!res.ok){ toast(await errMsg(res, '삭제하지 못했습니다.'), 'err'); return; }
           S.hq = S.hq.filter(x => x.id !== iv.id); S.hqa = (S.hqa || []).filter(a => a.interview_id !== iv.id); toast('삭제했습니다.'); render(); })));
