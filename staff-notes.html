@@ -1512,10 +1512,15 @@ async function hqUpload(iv, file){
   toast('첨부했습니다.'); render();
 }
 async function hqOpenFile(f){
+  const ext = (f.name.match(/\.([A-Za-z0-9]+)$/) || [])[1] || '', MIME = { pdf:'application/pdf', png:'image/png', jpg:'image/jpeg', jpeg:'image/jpeg', gif:'image/gif' };
+  const inline = !!MIME[ext.toLowerCase()];
+  const win = inline ? window.open('', '_blank') : null;   // 클릭 직후 탭을 먼저 열어 팝업 차단 방지
   const res = await storageCall('GET', f.path);
-  if (!res.ok){ toast('파일을 불러오지 못했습니다.', 'err'); return; }
-  const url = URL.createObjectURL(await res.blob()), a = el('a', {href:url, download:f.name, target:'_blank'});
-  document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 60000);
+  if (!res.ok){ if (win) win.close(); toast('파일을 불러오지 못했습니다.', 'err'); return; }
+  const blob = await res.blob(), url = URL.createObjectURL(inline ? new Blob([blob], {type: MIME[ext.toLowerCase()]}) : blob);
+  if (win){ win.location.href = url; }
+  else { const a = el('a', {href:url, download:f.name}); document.body.append(a); a.click(); a.remove(); }   // 한글·워드 등은 브라우저가 열 수 없어 다운로드
+  setTimeout(() => URL.revokeObjectURL(url), 120000);
 }
 function hqFilesBlock(iv){
   const files = iv.files || [];
