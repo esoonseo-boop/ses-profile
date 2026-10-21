@@ -90,6 +90,8 @@
   .no{display:inline-flex; align-items:center; justify-content:center; min-width:22px; height:22px; padding:0 6px; margin-right:8px; border-radius:999px; background:var(--brand); color:#fff; font-size:12px; font-weight:700; flex:none;}
   .rowitem .no{margin-right:0;}
   .hrow{display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:6px; margin-bottom:8px; padding:8px; border:1px dashed var(--line); border-radius:10px; align-items:center;}
+  .stp{display:flex; gap:6px; margin:10px 0;} .stp button{flex:1; border:1px solid var(--line); background:#fff; border-radius:999px; padding:8px 4px; font-weight:700; font-size:13px; cursor:pointer; font-family:inherit;} .stp button.on{background:var(--brand); color:#fff; border-color:var(--brand);}
+  .hqh{display:flex; flex-wrap:wrap; gap:6px; align-items:center; cursor:pointer; padding:6px 0; width:100%; text-align:left; background:none; border:0; font:inherit;}
   .grp{margin:14px 0 6px; padding:8px 12px; border-radius:10px; font-size:13px; font-weight:800;} .grp small{font-weight:500; opacity:.8; margin-left:6px;}
   .grp.pre{background:#E8EFFF; color:#1B5EFF;} .grp.res{background:#E6F6EC; color:#157347;}
   .hqb{margin:8px 0; padding:8px 10px; background:#F7F9FF; border-radius:12px;} .hql{font-size:13.5px; margin:4px 0;}
@@ -1463,7 +1465,7 @@ function openHqModal(iv){
       const res = await api(isNew ? '/rest/v1/hq_interviews' : '/rest/v1/hq_interviews?id=eq.' + iv.id, { method: isNew ? 'POST' : 'PATCH', headers:{Prefer:'return=representation'}, body });
       if (!res.ok){ save.disabled = false; msg.className = 'hint err'; msg.textContent = await errMsg(res, '저장하지 못했습니다.'); return; }
       const row = (await res.json())[0];
-      S.hq = (S.hq || []).filter(x => x.id !== row.id); S.hq.push(row); S.hq.sort((a, b) => b.interview_on.localeCompare(a.interview_on));
+      S.hq = (S.hq || []).filter(x => x.id !== row.id); S.hq.push(row); (S.hqx = S.hqx || {})[row.id] = true; S.hq.sort((a, b) => b.interview_on.localeCompare(a.interview_on));
       let ok = true;
       for (const r of newActs){
         const rr = await api('/rest/v1/hq_actions', { method:'POST', headers:{Prefer:'return=representation'}, body:{ branch_name: me.branch_name, interview_id: row.id, kind: r.kind.value, content: r.content.value.trim(), due_date: r.due.value || null } });
@@ -1473,20 +1475,29 @@ function openHqModal(iv){
     };
     const sec = (t, ...n) => el('details', {class:'sec', open:true}, el('summary', {text:t}), el('div', {style:'padding:8px 4px 4px;'}, ...n));
     const addBtn = (rows, label) => el('button', {class:'btn sm', type:'button', text:label, onclick: () => rows.add()});
-    return [
+    const stepBtns = [], panels = [el('div'), el('div'), el('div')];
+    const setStep = (n) => { panels.forEach((p, i) => { p.style.display = i === n ? '' : 'none'; stepBtns[i] && stepBtns[i].classList.toggle('on', i === n); }); };
+    const secO = (t, open, ...n) => el('details', {class:'sec', open}, el('summary', {text:t}), el('div', {style:'padding:8px 4px 4px;'}, ...n));
+    panels[0].append(
+      secO('1. 승진 추천', true, el('div', {class:'hint', text:'직급별 승진대상자 · 직원 선택 후 급·자격요건·순위·사유 입력'}), promo.node, addBtn(promo, '+ 추천 대상 추가')),
+      secO('2. 이동 희망 직원', isNew || (base.moves || []).length > 0, el('div', {class:'hint', text:'현소속일은 직원 부임일로 표시'}), mov.node, addBtn(mov, '+ 이동 희망 추가')),
+      secO('3. 결원 예정', (base.vacancy || []).length > 0 || !!(iv && iv.vacancy_none) , el('label', {class:'inline'}, vacNone, '해당 사항 없음'), vac.node, addBtn(vac, '+ 결원 예정 추가')),
+      secO('4. 건의·요청 안건', !!(iv && iv.agenda), el('div', {class:'field'}, el('label', {text:'면담에서 건의·요청할 안건'}), agenda)));
+    panels[1].append(
+      el('details', {class:'sec', open:!(iv && iv.notes)}, el('summary', {text:'면담 결과 AI 요약 등록 (선택)'}), el('div', {style:'padding:8px 4px 4px;'}, el('div', {class:'hint', text:'본부장과 면담한 메모를 붙여넣으면 본부 답변·합의와 이행 항목 초안을 채워 줍니다. 원문은 저장하지 않으며, 저장 전에 직접 확인·수정하세요.'}), aiSrc, aiMsg, aiBtn)),
+      el('div', {class:'field', style:'margin-top:10px;'}, el('label', {text:'본부장 답변·합의 사항'}), notes));
+    panels[2].append(el('div', {class:'hint', text:'건의·요청 / 본부 지시 · 내용 / 기한'}), act.node, el('button', {class:'btn sm', type:'button', text:'+ 항목 추가', onclick: () => addAct().content.focus()}));
+    setStep(isNew ? 0 : 1);
+    const out = [
       isNew && prev ? el('div', {style:'margin-bottom:8px;'}, el('button', {class:'btn sm', type:'button', text:'직전 면담(' + prev.period + ')의 승진 추천·이동 희망 불러오기', onclick: (e) => { (prev.promo || []).forEach(p => promo.add(Object.assign({}, p))); (prev.moves || []).forEach(m => mov.add(Object.assign({}, m))); e.target.remove(); }})) : null,
       el('div', {class:'row2'}, el('div', {class:'field'}, el('label', {text:'평가 기간'}), period), el('div', {class:'field'}, el('label', {text:'면담일'}), date)),
       el('div', {class:'row2'}, el('div', {class:'field'}, el('label', {}, '면담자 ', el('span', {class:'opt', text:'(선택)'})), who), el('div', {class:'field'}, el('label', {}, '인사 시기 ', el('span', {class:'opt', text:'(예: 2027년 상반기)'})), term)),
-      el('div', {class:'grp pre'}, '① 사전 준비', el('small', {text:'본부에 제출한 자료 · 면담 전에 작성'})),
-      sec('1. 승진 추천', el('div', {class:'hint', text:'직급별 승진대상자 · 직원 선택 후 승진 급·자격요건·순위·추천 사유를 입력합니다.'}), promo.node, addBtn(promo, '+ 추천 대상 추가')),
-      sec('2. 인력운용 의견 · 결원 예정', el('label', {class:'inline'}, vacNone, '해당 사항 없음'), vac.node, addBtn(vac, '+ 결원 예정 추가')),
-      sec('3. 인력운용 의견 · 이동 희망 직원', el('div', {class:'hint', text:'정기 인사이동 시 관내·관외 이동 희망 직원 (현소속일은 직원 부임일로 표시)'}), mov.node, addBtn(mov, '+ 이동 희망 추가')),
-      sec('4. 건의·요청 안건', el('div', {class:'field'}, el('label', {text:'면담에서 건의·요청할 안건'}), agenda)),
-      el('div', {class:'grp res'}, '② 면담 결과', el('small', {text:'면담 후 기록 · 본부장 답변과 약속 사항'})),
-      el('details', {class:'sec', open:!(iv && iv.notes)}, el('summary', {text:'면담 결과 AI 요약 등록 (선택)'}), el('div', {style:'padding:8px 4px 4px;'}, el('div', {class:'hint', text:'본부장과 면담한 메모를 붙여넣으면 본부 답변·합의와 이행 항목 초안을 채워 줍니다. 원문은 저장하지 않으며, 저장 전에 직접 확인·수정하세요.'}), aiSrc, aiMsg, aiBtn)),
-      sec('5. 본부 답변·합의', el('div', {class:'field'}, el('label', {text:'본부장 답변·합의 사항'}), notes)),
-      sec('6. ' + (isNew ? '이행 점검 항목' : '이행 점검 항목 추가'), el('div', {class:'hint', text:'건의·요청 / 본부 지시 · 내용 / 기한'}), act.node, el('button', {class:'btn sm', type:'button', text:'+ 항목 추가', onclick: () => addAct().content.focus()})),
+      el('div', {class:'stp'}, ...[['① 사전 준비', 0], ['② 면담 결과', 1], ['③ 이행 항목', 2]].map(([t, n]) => { const bt = el('button', {type:'button', text:t, onclick: () => setStep(n)}); stepBtns.push(bt); return bt; })),
+      panels[0],
+      panels[1],
+      panels[2],
       msg, el('div', {class:'actions', style:'margin-top:12px;'}, save, el('button', {class:'btn sm', type:'button', text:'닫기', onclick: close}))];
+    setStep(isNew ? 0 : 1); return out;
   });
 }
 function hqSummaryText(iv){
@@ -1503,12 +1514,10 @@ function hqSummaryText(iv){
   return L.join('\n');
 }
 function hqSections(iv){
-  const out = [];
-  const block = (title, ...nodes) => el('div', {class:'hqb'}, el('div', {class:'msec', text:title}), ...nodes);
-  if ((iv.promo || []).length) out.push(block(`${iv.target_term ? iv.target_term + ' ' : ''}승진 추천`, ...iv.promo.map(p => el('div', {class:'hql'}, el('b', {text:`${p.grade || ''}${p.rank ? ' ' + p.rank + '순위' : ''}`.trim() + ' · ' + stLabel(p.staff_id)}), p.req ? el('span', {class:'badge gray', style:'margin-left:6px;', text:'자격 ' + p.req}) : null, p.reason ? el('div', {class:'sm-text', text:p.reason}) : null))));
-  out.push(block('결원 예정', iv.vacancy_none || !(iv.vacancy || []).length ? el('div', {class:'hql', text:'해당 사항 없음'}) : null, ...(iv.vacancy || []).map(v => el('div', {class:'hql', text:`${stLabel(v.staff_id)} · ${v.when || ''} ${v.reason || ''}${v.note ? ' (' + v.note + ')' : ''}`}))));
-  if ((iv.moves || []).length) out.push(block('이동 희망 직원', ...iv.moves.map(m => { const x = staffById(m.staff_id);
-    return el('div', {class:'hql'}, el('b', {text:stLabel(m.staff_id)}), el('span', {class:'badge gray', style:'margin-left:6px;', text:(x && x.rank_title) || ''}), ` 현소속 ${x && x.joined_on ? fmtD(x.joined_on) : '-'} → ${m.hope || '-'}`, el('span', {class:'badge', style:'margin-left:6px;', text:m.reason || ''})); })));
+  const out = [], line = (...n) => el('div', {class:'hql'}, ...n);
+  (iv.promo || []).forEach(p => out.push(line(el('b', {text:`${iv.target_term ? iv.target_term + ' ' : ''}승진 ${p.grade || ''}${p.rank ? ' ' + p.rank + '순위' : ''}`.replace(/\s+/g, ' ').trim()}), ' · ' + stLabel(p.staff_id), p.reason ? el('span', {class:'sm-text', text:' — ' + p.reason}) : null)));
+  (iv.moves || []).forEach(m => { const x = staffById(m.staff_id); out.push(line(el('b', {text:'이동 희망'}), ` · ${stLabel(m.staff_id)} → ${m.hope || '-'}`, el('span', {class:'sm-text', text:` (${m.reason || ''}${x && x.joined_on ? ', 현소속 ' + fmtD(x.joined_on) : ''})`}))); });
+  out.push(line(el('b', {text:'결원 예정'}), ' · ' + (iv.vacancy_none || !(iv.vacancy || []).length ? '해당 없음' : iv.vacancy.map(v => `${stLabel(v.staff_id)} ${v.when || ''} ${v.reason || ''}${v.note ? ' (' + v.note + ')' : ''}`).join(', '))));
   return out;
 }
 function hqActRow(a, refresh){
@@ -1538,7 +1547,7 @@ async function storageCall(method, path, body, type){
 }
 async function hqSaveFiles(iv, files){
   const res = await api('/rest/v1/hq_interviews?id=eq.' + iv.id, { method:'PATCH', headers:{Prefer:'return=representation'}, body:{ files, updated_at: new Date().toISOString() } });
-  if (!res.ok) return false; iv.files = files; return true;
+  if (!res.ok) return false; iv.files = files; (S.hqf = S.hqf || {})[iv.id] = true; return true;
 }
 async function hqUpload(iv, file){
   if (file.size > HQ_MAX){ toast('20MB 이하 파일만 첨부할 수 있습니다.', 'err'); return; }
@@ -1580,24 +1589,36 @@ function hqFilesBlock(iv){
 }
 function viewHq(){
   const list = S.hq || [], open = hqOpen(), late = open.filter(hqLate).length;
+  S.hqx = S.hqx || {};
   const items = list.map((iv, i) => {
     const acts = (S.hqa || []).filter(a => a.interview_id === iv.id), done = acts.filter(a => a.status === 'done').length;
-    return el('div', {class:'tli'},
-      el('div', {class:'d'}, el('span', {class:'no', text:list.length - i}), el('b', {text:iv.period, style:'margin-right:8px;'}), fmtD(iv.interview_on),
-        iv.interviewer ? el('span', {class:'badge gray', style:'margin-left:6px;', text:iv.interviewer}) : null,
-        acts.length ? el('span', {class:'badge ' + (done === acts.length ? 'green' : 'amber'), style:'margin-left:6px;', text:`이행 ${done}/${acts.length}`}) : null),
-      el('div', {class:'grp pre'}, '① 사전 준비', el('small', {text:'본부 제출 자료'})),
-      hqSections(iv),
-      iv.agenda ? el('div', {class:'hqb'}, el('div', {class:'msec', text:'건의·요청 안건'}), el('div', {class:'hql', text:iv.agenda})) : null,
-      hqFilesBlock(iv),
-      el('div', {class:'grp res'}, '② 면담 결과', el('small', {text:iv.notes || acts.length ? '기록됨' : '아직 기록 전'})),
-      iv.notes ? el('div', {class:'hqb'}, el('div', {class:'msec', text:'본부 답변·합의'}), el('div', {class:'hql', style:'white-space:pre-line;', text:iv.notes})) : null,
-      acts.length ? el('div', {class:'hqb'}, el('div', {class:'msec', text:'이행 점검 항목'}), ...acts.map(a => hqActRow(a, () => render()))) : null,
-      iv.notes || acts.length ? null : el('div', {class:'hint', text:'면담 후 "수정·항목 추가"에서 본부 답변과 이행 항목을 기록하세요.'}),
+    const isOpen = S.hqx[iv.id] !== undefined ? S.hqx[iv.id] : i === 0, hasRes = !!(iv.notes || acts.length), nf = (iv.files || []).length;
+    const head = el('button', {class:'hqh', type:'button', 'aria-expanded':String(isOpen), onclick: () => { S.hqx[iv.id] = !isOpen; render(); }},
+      el('span', {class:'no', text:list.length - i}), el('b', {text:iv.period}), el('span', {text:fmtD(iv.interview_on), style:'color:var(--muted,#667);'}),
+      iv.interviewer ? el('span', {class:'badge gray', text:iv.interviewer}) : null,
+      (iv.promo || []).length ? el('span', {class:'badge', text:'승진 ' + iv.promo.length}) : null,
+      (iv.moves || []).length ? el('span', {class:'badge', text:'이동 ' + iv.moves.length}) : null,
+      acts.length ? el('span', {class:'badge ' + (done === acts.length ? 'green' : 'amber'), text:`이행 ${done}/${acts.length}`}) : null,
+      el('span', {class:'badge ' + (hasRes ? 'green' : 'gray'), text: hasRes ? '결과 기록' : '결과 전'}),
+      el('span', {style:'margin-left:auto;', text: isOpen ? '▲' : '▼'}));
+    if (!isOpen) return el('div', {class:'tli'}, head);
+    const pend = acts.filter(a => a.status !== 'done'), fin = acts.filter(a => a.status === 'done');
+    const filesBox = el('details', {class:'sec', open: !!(S.hqf && S.hqf[iv.id])}, el('summary', {text:'📎 제출 보고서 파일 ' + nf + '개'}), hqFilesBlock(iv));
+    filesBox.addEventListener('toggle', () => { S.hqf = S.hqf || {}; S.hqf[iv.id] = filesBox.open; });
+    const finBox = fin.length ? el('details', {class:'sec'}, el('summary', {text:'완료 ' + fin.length + '건 보기'}), ...fin.map(a => hqActRow(a, () => render()))) : null;
+    return el('div', {class:'tli'}, head,
+      el('div', {class:'grp pre'}, '① 사전 준비'),
+      ...hqSections(iv),
+      iv.agenda ? el('div', {class:'hql'}, el('b', {text:'건의·요청 안건'}), ' · ' + iv.agenda) : null,
+      filesBox,
+      el('div', {class:'grp res'}, '② 면담 결과', el('small', {text: hasRes ? '' : '아직 기록 전'})),
+      iv.notes ? el('div', {class:'hql', style:'white-space:pre-line;'}, iv.notes) : null,
+      ...pend.map(a => hqActRow(a, () => render())), finBox,
+      hasRes ? null : el('div', {class:'hint', text:'면담 후 "수정"에서 본부 답변과 이행 항목을 기록하세요.'}),
       el('div', {class:'actions', style:'margin-top:6px;'},
-        el('button', {class:'btn sm', type:'button', text:'수정·항목 추가', onclick: () => openHqModal(iv)}),
-        el('button', {class:'btn sm', type:'button', text:'면담 자료 복사', onclick: () => copyText(hqSummaryText(iv), '면담 자료를 복사했습니다.')}),
-        confirmButton('면담 삭제', '정말 삭제', async () => {
+        el('button', {class:'btn sm', type:'button', text:'수정', onclick: () => openHqModal(iv)}),
+        el('button', {class:'btn sm', type:'button', text:'복사', onclick: () => copyText(hqSummaryText(iv), '면담 자료를 복사했습니다.')}),
+        confirmButton('삭제', '정말 삭제', async () => {
           for (const f of (iv.files || [])) await storageCall('DELETE', f.path);
           const res = await api('/rest/v1/hq_interviews?id=eq.' + iv.id, { method:'DELETE' });
           if (!res.ok){ toast(await errMsg(res, '삭제하지 못했습니다.'), 'err'); return; }
@@ -1605,9 +1626,7 @@ function viewHq(){
   });
   return el('div', {},
     el('div', {class:'card'}, el('h2', {text:'본부 면담 관리'}),
-      el('p', {class:'desc', text:'지역본부장 반기 면담의 안건·답변과 약속 사항(건의·요청, 본부 지시) 이행을 관리합니다.'}),
-      el('div', {class:'evs'}, el('div', {class:'ev'}, el('b', {text:list.length + '건'}), el('span', {text:'면담 기록'})), el('div', {class:'ev'}, el('b', {text:open.length + '건'}), el('span', {text:'이행 중'})),
-        el('div', {class:'ev'}, el('b', {text:late + '건'}), el('span', {text:'기한 지남'}))),
+      el('p', {class:'desc', text:`면담 ${list.length}건 · 이행 중 ${open.length}건 · 기한 지남 ${late}건`}),
       el('div', {class:'actions'}, el('button', {class:'btn primary', type:'button', text:'+ 면담 등록', onclick: () => openHqModal(null)})),
       items.length ? el('div', {class:'tl', style:'margin-top:14px;'}, items) : el('div', {class:'empty', text:'아직 등록된 본부 면담이 없습니다.'})));
 }
