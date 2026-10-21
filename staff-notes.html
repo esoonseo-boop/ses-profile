@@ -116,6 +116,7 @@
   .hrow select,.frow select{padding-right:30px; background-position:right 10px center;}
   .hrow .btn,.frow .btn{height:34px; min-height:0; padding:0 12px;}
   .hrow{gap:5px; padding:6px;}
+  @media(min-width:600px){ .hrow.one{grid-template-columns:minmax(96px,1.2fr) 44px minmax(80px,1.1fr) 52px minmax(90px,2.2fr) 34px; padding:4px;} .hrow.one .btn{padding:0; width:34px;} .hrow.one input,.hrow.one select{padding-left:6px; padding-right:6px;} .hrow.one select{padding-right:22px; background-position:right 6px center;} }
   .frow{display:grid; grid-template-columns:1fr 150px 150px auto; gap:6px; margin-bottom:6px; align-items:center;}
   @media(max-width:640px){ .frow{grid-template-columns:1fr 1fr;} .frow .fc{grid-column:1 / -1;} }
   .reb{background:#EFF6FF; border:1px solid #BFDBFE; border-radius:12px; padding:10px 12px; font-size:13px; margin-bottom:10px; white-space:pre-wrap;}
@@ -1389,10 +1390,10 @@ function openHqActModal(a, after){
 }
 const HQ_REASONS = ['거주지이전','결혼','건강문제','대학진학','현소속 장기근무','격지해소','본인희망','기타'];
 const stLabel = (id) => { const x = staffById(id); return x ? [x.initials, x.name_masked].filter(Boolean).join(' · ') : '(삭제된 직원)'; };
-function hqRows(spec, initial){
+function hqRows(spec, initial, cls){
   const rows = [], box = el('div');
   const add = (v) => { v = v || {}; const r = { f:{} };
-    r.node = el('div', {class:'hrow'});
+    r.node = el('div', {class:'hrow' + (cls ? ' ' + cls : '')});
     spec.forEach(c => { let inp;
       if (c.type === 'staff') inp = el('select', {'aria-label':c.label}, el('option', {value:'', text:'직원 선택'}), S.staff.filter(x => x.active || x.id === v[c.k]).map(x => el('option', {value:x.id, text:[x.initials, x.name_masked].filter(Boolean).join(' · ')})));
       else if (c.type === 'select') inp = el('select', {'aria-label':c.label}, c.opts.map(o => el('option', {value:o, text:o})));
@@ -1430,7 +1431,7 @@ function openHqModal(iv){
     const date = el('input', {class:'cp', type:'date', value: iv ? iv.interview_on : todayStr()});
     const who = el('input', {class:'cp', type:'text', maxlength:30, value: (iv && iv.interviewer) || (prev && prev.interviewer) || '', placeholder:'예: 지역본부장'});
     const term = el('input', {class:'cp', type:'text', maxlength:20, value: (iv && iv.target_term) || '', placeholder:'예: 2027년 상반기'});
-    const promo = hqRows([{k:'staff_id', label:'추천 대상자', type:'staff'}, {k:'grade', label:'승진 급', def:'', max:10, type:'text'}, {k:'req', label:'자격요건', max:30, type:'text'}, {k:'rank', label:'순위', type:'number'}, {k:'reason', label:'추천 사유', max:600, type:'text'}], clone(base.promo));
+    const promo = hqRows([{k:'staff_id', label:'추천 대상자', type:'staff'}, {k:'grade', label:'급', def:'', max:10, type:'text'}, {k:'req', label:'자격요건', max:30, type:'text'}, {k:'rank', label:'순위', type:'number'}, {k:'reason', label:'추천 사유', max:600, type:'text'}], clone(base.promo), 'one');
     const vacNone = el('input', {type:'checkbox', checked: iv ? !!iv.vacancy_none : false});
     const vac = hqRows([{k:'staff_id', label:'결원 예정 직원', type:'staff'}, {k:'when', label:'예정 시기(예: 2월초)', max:30, type:'text'}, {k:'reason', label:'결원 사유(육아휴직 등)', max:30, type:'text'}, {k:'note', label:'비고', max:60, type:'text'}], iv ? iv.vacancy : []);
     const mov = hqRows([{k:'staff_id', label:'이동 희망 직원', type:'staff'}, {k:'hope', label:'희망 지역(관내 영업점/관외 본부)', max:40, type:'text'}, {k:'reason', label:'이동 사유', type:'select', opts:HQ_REASONS}], clone(base.moves));
@@ -1488,12 +1489,15 @@ function openHqModal(iv){
     const addBtn = (rows, label) => el('button', {class:'btn sm', type:'button', text:label, onclick: () => rows.add()});
     const stepBtns = [], panels = [el('div'), el('div'), el('div')];
     const setStep = (n) => { setTimeout(growAll, 0); panels.forEach((p, i) => { p.style.display = i === n ? '' : 'none'; stepBtns[i] && stepBtns[i].classList.toggle('on', i === n); }); };
-    const secO = (t, open, ...n) => el('details', {class:'sec', open}, el('summary', {text:t}), el('div', {style:'padding:8px 4px 4px;'}, ...n));
+    const secO = (t, open, rows, label, ...n) => { const d = el('details', {class:'sec', open});
+      const sm = el('summary', {}, el('span', {text:t, style:'margin-right:auto;'}));
+      if (rows) sm.append(el('button', {class:'btn sm', type:'button', text:label, style:'height:28px; min-height:0; padding:0 12px; margin-right:10px;', onclick: (e) => { e.preventDefault(); e.stopPropagation(); d.open = true; rows.add(); }}));
+      d.append(sm, el('div', {style:'padding:8px 4px 4px;'}, ...n)); return d; };
     panels[0].append(
-      secO('1. 승진 추천', true, el('div', {class:'hint', text:'직급별 승진대상자 · 직원 선택 후 급·자격요건·순위·사유 입력'}), promo.node, addBtn(promo, '+ 추천 대상 추가')),
-      secO('2. 이동 희망 직원', isNew || (base.moves || []).length > 0, el('div', {class:'hint', text:'현소속일은 직원 부임일로 표시'}), mov.node, addBtn(mov, '+ 이동 희망 추가')),
-      secO('3. 결원 예정', (base.vacancy || []).length > 0 || !!(iv && iv.vacancy_none) , el('label', {class:'inline'}, vacNone, '해당 사항 없음'), vac.node, addBtn(vac, '+ 결원 예정 추가')),
-      secO('4. 건의·요청 안건', !!(iv && iv.agenda), el('div', {class:'field'}, el('label', {text:'면담에서 건의·요청할 안건'}), agenda)));
+      secO('1. 승진 추천', true, promo, '+ 추가', el('div', {class:'hint', text:'직급별 승진대상자 · 직원 선택 후 급·자격요건·순위·사유 입력'}), promo.node),
+      secO('2. 이동 희망 직원', isNew || (base.moves || []).length > 0, mov, '+ 추가', el('div', {class:'hint', text:'현소속일은 직원 부임일로 표시'}), mov.node),
+      secO('3. 결원 예정', (base.vacancy || []).length > 0 || !!(iv && iv.vacancy_none), vac, '+ 추가', el('label', {class:'inline'}, vacNone, '해당 사항 없음'), vac.node),
+      secO('4. 건의·요청 안건', !!(iv && iv.agenda), null, '', el('div', {class:'field'}, el('label', {text:'면담에서 건의·요청할 안건'}), agenda)));
     panels[1].append(
       el('details', {class:'sec', open:!(iv && iv.notes)}, el('summary', {text:'면담 결과 AI 요약 등록 (선택)'}), el('div', {style:'padding:8px 4px 4px;'}, el('div', {class:'hint', text:'본부장과 면담한 메모를 붙여넣으면 본부 답변·합의와 이행 항목 초안을 채워 줍니다. 원문은 저장하지 않으며, 저장 전에 직접 확인·수정하세요.'}), aiSrc, aiMsg, aiBtn)),
       el('div', {class:'field', style:'margin-top:10px;'}, el('label', {text:'본부장 답변·합의 사항'}), notes));
