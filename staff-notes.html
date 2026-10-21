@@ -1559,7 +1559,7 @@ async function hqUpload(iv, file){
   if (!up.ok){ toast(await errMsg(up, '업로드하지 못했습니다.'), 'err'); return; }
   const list = (iv.files || []).concat([{ path, name: file.name.slice(0, 120), size: file.size, at: new Date().toISOString() }]);
   if (!(await hqSaveFiles(iv, list))){ await storageCall('DELETE', path); toast('파일 정보를 저장하지 못했습니다.', 'err'); return; }
-  toast('첨부했습니다.'); render();
+  toast('첨부했습니다.'); hqRefresh();
 }
 async function hqOpenFile(f){
   const ext = (f.name.match(/\.([A-Za-z0-9]+)$/) || [])[1] || '', MIME = { pdf:'application/pdf', png:'image/png', jpg:'image/jpeg', jpeg:'image/jpeg', gif:'image/gif' };
@@ -1582,53 +1582,60 @@ function hqFilesBlock(iv){
       confirmButton('삭제', '정말 삭제', async () => {
         const r = await storageCall('DELETE', f.path);
         if (!r.ok && r.status !== 404){ toast('파일을 삭제하지 못했습니다.', 'err'); return; }
-        if (await hqSaveFiles(iv, files.filter(x => x.path !== f.path))){ toast('삭제했습니다.'); render(); } else toast('파일 정보를 갱신하지 못했습니다.', 'err'); }))),
+        if (await hqSaveFiles(iv, files.filter(x => x.path !== f.path))){ toast('삭제했습니다.'); hqRefresh(); } else toast('파일 정보를 갱신하지 못했습니다.', 'err'); }))),
     files.length ? null : el('div', {class:'hint', text:'아직 첨부된 파일이 없습니다.'}),
     el('div', {class:'hint', style:'margin:4px 0;', text:'본부 제출 보고서(PDF·이미지·한글·워드·엑셀·PPT, 20MB 이하)를 보관합니다. 지점장만 열람할 수 있습니다.'}),
     input, el('button', {class:'btn sm', type:'button', text:'+ 파일 첨부', onclick: () => input.click()}));
 }
-function viewHq(){
-  const list = S.hq || [], open = hqOpen(), late = open.filter(hqLate).length;
-  S.hqx = S.hqx || {};
-  const items = list.map((iv, i) => {
-    const acts = (S.hqa || []).filter(a => a.interview_id === iv.id), done = acts.filter(a => a.status === 'done').length;
-    const isOpen = S.hqx[iv.id] !== undefined ? S.hqx[iv.id] : i === 0, hasRes = !!(iv.notes || acts.length), nf = (iv.files || []).length;
-    const head = el('button', {class:'hqh', type:'button', 'aria-expanded':String(isOpen), onclick: () => { S.hqx[iv.id] = !isOpen; render(); }},
-      el('span', {class:'no', text:list.length - i}), el('b', {text:iv.period}), el('span', {text:fmtD(iv.interview_on), style:'color:var(--muted,#667);'}),
-      iv.interviewer ? el('span', {class:'badge gray', text:iv.interviewer}) : null,
-      (iv.promo || []).length ? el('span', {class:'badge', text:'승진 ' + iv.promo.length}) : null,
-      (iv.moves || []).length ? el('span', {class:'badge', text:'이동 ' + iv.moves.length}) : null,
-      acts.length ? el('span', {class:'badge ' + (done === acts.length ? 'green' : 'amber'), text:`이행 ${done}/${acts.length}`}) : null,
-      el('span', {class:'badge ' + (hasRes ? 'green' : 'gray'), text: hasRes ? '결과 기록' : '결과 전'}),
-      el('span', {style:'margin-left:auto;', text: isOpen ? '▲' : '▼'}));
-    if (!isOpen) return el('div', {class:'tli'}, head);
+function hqRefresh(){
+  const d = S.hqDetail; render();
+  if (d){ d.close(); const iv = hqIv(d.id); if (iv) openHqDetail(iv); }
+}
+function openHqDetail(iv){
+  modalShell(`${iv.period} 본부 면담 · ${fmtD(iv.interview_on)}`, (close) => {
+    S.hqDetail = { id: iv.id, close };
+    const closeAll = () => { S.hqDetail = null; close(); };
+    const acts = (S.hqa || []).filter(a => a.interview_id === iv.id), hasRes = !!(iv.notes || acts.length), nf = (iv.files || []).length;
     const pend = acts.filter(a => a.status !== 'done'), fin = acts.filter(a => a.status === 'done');
     const filesBox = el('details', {class:'sec', open: !!(S.hqf && S.hqf[iv.id])}, el('summary', {text:'📎 제출 보고서 파일 ' + nf + '개'}), hqFilesBlock(iv));
     filesBox.addEventListener('toggle', () => { S.hqf = S.hqf || {}; S.hqf[iv.id] = filesBox.open; });
-    const finBox = fin.length ? el('details', {class:'sec'}, el('summary', {text:'완료 ' + fin.length + '건 보기'}), ...fin.map(a => hqActRow(a, () => render()))) : null;
-    return el('div', {class:'tli'}, head,
+    const finBox = fin.length ? el('details', {class:'sec'}, el('summary', {text:'완료 ' + fin.length + '건 보기'}), ...fin.map(a => hqActRow(a, hqRefresh))) : null;
+    return [
+      iv.interviewer ? el('div', {class:'hint', text:'면담자 ' + iv.interviewer}) : null,
       el('div', {class:'grp pre'}, '① 사전 준비'),
       ...hqSections(iv),
       iv.agenda ? el('div', {class:'hql'}, el('b', {text:'건의·요청 안건'}), ' · ' + iv.agenda) : null,
       filesBox,
       el('div', {class:'grp res'}, '② 면담 결과', el('small', {text: hasRes ? '' : '아직 기록 전'})),
       iv.notes ? el('div', {class:'hql', style:'white-space:pre-line;'}, iv.notes) : null,
-      ...pend.map(a => hqActRow(a, () => render())), finBox,
+      ...pend.map(a => hqActRow(a, hqRefresh)), finBox,
       hasRes ? null : el('div', {class:'hint', text:'면담 후 "수정"에서 본부 답변과 이행 항목을 기록하세요.'}),
-      el('div', {class:'actions', style:'margin-top:6px;'},
-        el('button', {class:'btn sm', type:'button', text:'수정', onclick: () => openHqModal(iv)}),
+      el('div', {class:'actions', style:'margin-top:12px;'},
+        el('button', {class:'btn primary sm', type:'button', text:'수정', onclick: () => { closeAll(); openHqModal(iv); }}),
         el('button', {class:'btn sm', type:'button', text:'복사', onclick: () => copyText(hqSummaryText(iv), '면담 자료를 복사했습니다.')}),
         confirmButton('삭제', '정말 삭제', async () => {
           for (const f of (iv.files || [])) await storageCall('DELETE', f.path);
           const res = await api('/rest/v1/hq_interviews?id=eq.' + iv.id, { method:'DELETE' });
           if (!res.ok){ toast(await errMsg(res, '삭제하지 못했습니다.'), 'err'); return; }
-          S.hq = S.hq.filter(x => x.id !== iv.id); S.hqa = (S.hqa || []).filter(a => a.interview_id !== iv.id); toast('삭제했습니다.'); render(); })));
+          S.hq = S.hq.filter(x => x.id !== iv.id); S.hqa = (S.hqa || []).filter(a => a.interview_id !== iv.id); closeAll(); toast('삭제했습니다.'); render(); }),
+        el('button', {class:'btn sm', type:'button', text:'닫기', onclick: closeAll}))];
+  });
+}
+function viewHq(){
+  const list = S.hq || [], open = hqOpen(), late = open.filter(hqLate).length;
+  const items = list.map((iv, i) => {
+    const acts = (S.hqa || []).filter(a => a.interview_id === iv.id), done = acts.filter(a => a.status === 'done').length, hasRes = !!(iv.notes || acts.length);
+    return el('button', {class:'hqh', type:'button', onclick: () => openHqDetail(iv), style:'border-bottom:1px solid var(--line); padding:12px 4px;'},
+      el('span', {class:'no', text:list.length - i}), el('b', {text:iv.period}), el('span', {text:fmtD(iv.interview_on)}),
+      acts.length ? el('span', {class:'badge ' + (done === acts.length ? 'green' : 'amber'), text:`이행 ${done}/${acts.length}`}) : null,
+      el('span', {class:'badge ' + (hasRes ? 'green' : 'gray'), text: hasRes ? '결과 기록' : '결과 전'}),
+      el('span', {style:'margin-left:auto;', text:'›'}));
   });
   return el('div', {},
     el('div', {class:'card'}, el('h2', {text:'본부 면담 관리'}),
       el('p', {class:'desc', text:`면담 ${list.length}건 · 이행 중 ${open.length}건 · 기한 지남 ${late}건`}),
       el('div', {class:'actions'}, el('button', {class:'btn primary', type:'button', text:'+ 면담 등록', onclick: () => openHqModal(null)})),
-      items.length ? el('div', {class:'tl', style:'margin-top:14px;'}, items) : el('div', {class:'empty', text:'아직 등록된 본부 면담이 없습니다.'})));
+      items.length ? el('div', {style:'margin-top:10px;'}, items) : el('div', {class:'empty', text:'아직 등록된 본부 면담이 없습니다.'})));
 }
 
 /* ---------- 시작 ---------- */
