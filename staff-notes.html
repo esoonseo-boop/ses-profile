@@ -111,6 +111,11 @@
   .fu .res{flex-basis:100%; font-size:12.5px; color:var(--ink-soft); background:#fff; border-radius:6px; padding:4px 8px; white-space:pre-wrap;}
   .fu .fa{display:flex; gap:6px; flex-wrap:wrap; flex-basis:100%;}
   .badge.blue{background:#DBEAFE; color:var(--brand);}
+  textarea.auto{max-height:60vh; overflow-y:auto;}
+  .hrow input,.hrow select,.frow input,.frow select,input.cp{height:34px; min-height:0; padding:4px 10px; font-size:13.5px; border-radius:8px;}
+  .hrow select,.frow select{padding-right:30px; background-position:right 10px center;}
+  .hrow .btn,.frow .btn{height:34px; min-height:0; padding:0 12px;}
+  .hrow{gap:5px; padding:6px;}
   .frow{display:grid; grid-template-columns:1fr 150px 150px auto; gap:6px; margin-bottom:6px; align-items:center;}
   @media(max-width:640px){ .frow{grid-template-columns:1fr 1fr;} .frow .fc{grid-column:1 / -1;} }
   .reb{background:#EFF6FF; border:1px solid #BFDBFE; border-radius:12px; padding:10px 12px; font-size:13px; margin-bottom:10px; white-space:pre-wrap;}
@@ -1412,19 +1417,24 @@ function hqAiParse(raw){
   try{ const o = JSON.parse(t); if (o && typeof o === 'object') return { notes: String(o.notes || '').trim(), actions: (Array.isArray(o.actions) ? o.actions : []).filter(a => a && a.content).map(a => ({ content: String(a.content).trim().slice(0, 200), kind: a.kind === 'order' ? 'order' : 'request', due: /^\d{4}-\d{2}-\d{2}$/.test(a.due || '') ? a.due : '' })) }; }catch(e){}
   return null;
 }
+function growAll(){
+  document.querySelectorAll('textarea.auto').forEach(t => { t.style.height = 'auto'; if (t.scrollHeight) t.style.height = (t.scrollHeight + 2) + 'px'; });
+}
+document.addEventListener('input', (e) => { if (e.target.classList && e.target.classList.contains('auto')) growAll(); });
+document.addEventListener('toggle', () => growAll(), true);
 function openHqModal(iv){
   const isNew = !iv, prev = isNew ? (S.hq || [])[0] : null, base = iv || {};   // 새 면담은 빈 폼(직전 내용은 버튼으로 선택 불러오기)
   const clone = (arr) => arr || [];
   modalShell(isNew ? '본부 면담 등록' : '본부 면담 수정', (close) => {
-    const period = el('input', {type:'text', maxlength:20, value: iv ? iv.period : curPeriod(), placeholder:'예: 26년 하반기'});
-    const date = el('input', {type:'date', value: iv ? iv.interview_on : todayStr()});
-    const who = el('input', {type:'text', maxlength:30, value: (iv && iv.interviewer) || (prev && prev.interviewer) || '', placeholder:'예: 지역본부장'});
-    const term = el('input', {type:'text', maxlength:20, value: (iv && iv.target_term) || '', placeholder:'예: 2027년 상반기'});
+    const period = el('input', {class:'cp', type:'text', maxlength:20, value: iv ? iv.period : curPeriod(), placeholder:'예: 26년 하반기'});
+    const date = el('input', {class:'cp', type:'date', value: iv ? iv.interview_on : todayStr()});
+    const who = el('input', {class:'cp', type:'text', maxlength:30, value: (iv && iv.interviewer) || (prev && prev.interviewer) || '', placeholder:'예: 지역본부장'});
+    const term = el('input', {class:'cp', type:'text', maxlength:20, value: (iv && iv.target_term) || '', placeholder:'예: 2027년 상반기'});
     const promo = hqRows([{k:'staff_id', label:'추천 대상자', type:'staff'}, {k:'grade', label:'승진 급', def:'', max:10, type:'text'}, {k:'req', label:'자격요건', max:30, type:'text'}, {k:'rank', label:'순위', type:'number'}, {k:'reason', label:'추천 사유', max:600, type:'text'}], clone(base.promo));
     const vacNone = el('input', {type:'checkbox', checked: iv ? !!iv.vacancy_none : false});
     const vac = hqRows([{k:'staff_id', label:'결원 예정 직원', type:'staff'}, {k:'when', label:'예정 시기(예: 2월초)', max:30, type:'text'}, {k:'reason', label:'결원 사유(육아휴직 등)', max:30, type:'text'}, {k:'note', label:'비고', max:60, type:'text'}], iv ? iv.vacancy : []);
     const mov = hqRows([{k:'staff_id', label:'이동 희망 직원', type:'staff'}, {k:'hope', label:'희망 지역(관내 영업점/관외 본부)', max:40, type:'text'}, {k:'reason', label:'이동 사유', type:'select', opts:HQ_REASONS}], clone(base.moves));
-    const ta = (v, ph, mx) => { const t = el('textarea', {maxlength:mx || 1000, placeholder:ph, style:'min-height:70px'}); t.value = v || ''; return t; };
+    const ta = (v, ph, mx) => { const t = el('textarea', {class:'auto', maxlength:mx || 3000, placeholder:ph, style:'min-height:70px;'}); t.value = v || ''; return t; };
     const agenda = ta(iv && iv.agenda, '기타 건의·요청 등 안건 (직원은 이니셜 또는 마스킹 이름으로)');
     const notes = ta(iv && iv.notes, '본부 답변·합의 사항 요약');
     const act = hqRows([{k:'content', label:'이행 내용(예: 후임 보충 시기 확인)', type:'text'}, {k:'kind', label:'구분', type:'select', opts:['request', 'order'], def:'request'}, {k:'due', label:'기한', max:10, type:'text'}], []);
@@ -1434,7 +1444,7 @@ function openHqModal(iv){
       const r = { kind: el('select', {'aria-label':'구분'}, Object.entries(HQ_KIND).map(([v, t]) => el('option', {value:v, text:t}))), content: el('input', {type:'text', maxlength:200, placeholder:'예: 기업팀 후임 보충 시기 확인', 'aria-label':'이행 내용'}), due: el('input', {type:'date', 'aria-label':'기한'}) };
       r.node = el('div', {class:'frow'}, r.content, r.kind, r.due, el('button', {class:'btn sm', type:'button', text:'×', 'aria-label':'삭제', onclick: () => { arows.splice(arows.indexOf(r), 1); r.node.remove(); }}));
       arows.push(r); act.node.append(r.node); return r; };
-    const aiSrc = el('textarea', {maxlength:6000, placeholder:'면담 메모·회의 텍스트를 붙여넣으세요 (직원은 이니셜·마스킹 이름으로 적어 주세요)', style:'min-height:110px'});
+    const aiSrc = el('textarea', {class:'auto', maxlength:6000, placeholder:'면담 메모·회의 텍스트를 붙여넣으세요 (직원은 이니셜·마스킹 이름으로 적어 주세요)', style:'min-height:110px'});
     const aiMsg = el('div', {class:'hint', style:'min-height:18px;'});
     const aiBtn = el('button', {class:'btn sm', type:'button', text:'AI 요약해서 채우기'});
     aiBtn.onclick = async () => {
@@ -1447,6 +1457,7 @@ function openHqModal(iv){
         const out = hqAiParse((await res.json()).text);
         if (!out || (!out.notes && !out.actions.length)) throw new Error('요약 결과를 읽지 못했습니다. 메모를 줄여 다시 시도해 주세요.');
         if (out.notes) notes.value = notes.value.trim() ? notes.value.trim() + '\n' + out.notes : out.notes;
+        growAll();
         out.actions.forEach(a => { const r = addAct(); r.content.value = a.content; r.kind.value = a.kind; r.due.value = a.due; });
         aiMsg.className = 'hint'; aiMsg.textContent = `AI 초안을 아래 '본부 답변·합의'와 '이행 점검 항목'에 채웠습니다(이행 ${out.actions.length}건). 내용을 확인·수정한 뒤 저장하세요.`;
       }catch(e){ aiMsg.className = 'hint err'; aiMsg.textContent = e.message || 'AI 요약에 실패했습니다.'; }
@@ -1476,7 +1487,7 @@ function openHqModal(iv){
     const sec = (t, ...n) => el('details', {class:'sec', open:true}, el('summary', {text:t}), el('div', {style:'padding:8px 4px 4px;'}, ...n));
     const addBtn = (rows, label) => el('button', {class:'btn sm', type:'button', text:label, onclick: () => rows.add()});
     const stepBtns = [], panels = [el('div'), el('div'), el('div')];
-    const setStep = (n) => { panels.forEach((p, i) => { p.style.display = i === n ? '' : 'none'; stepBtns[i] && stepBtns[i].classList.toggle('on', i === n); }); };
+    const setStep = (n) => { setTimeout(growAll, 0); panels.forEach((p, i) => { p.style.display = i === n ? '' : 'none'; stepBtns[i] && stepBtns[i].classList.toggle('on', i === n); }); };
     const secO = (t, open, ...n) => el('details', {class:'sec', open}, el('summary', {text:t}), el('div', {style:'padding:8px 4px 4px;'}, ...n));
     panels[0].append(
       secO('1. 승진 추천', true, el('div', {class:'hint', text:'직급별 승진대상자 · 직원 선택 후 급·자격요건·순위·사유 입력'}), promo.node, addBtn(promo, '+ 추천 대상 추가')),
