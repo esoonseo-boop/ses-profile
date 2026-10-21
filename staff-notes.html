@@ -1397,6 +1397,17 @@ function hqRows(spec, initial){
     .filter(o => o[spec[0].k]);
   return { node: box, add, get, texts: () => rows.flatMap(r => spec.filter(c => c.type === 'text').map(c => r.f[c.k].value)) };
 }
+const HQ_AI_SYSTEM = `당신은 은행 지점장의 지역본부장 면담 기록 정리를 돕는 보조자입니다. 입력된 면담 메모에 실제로 있는 내용만 정리합니다. 없는 내용을 추측하거나 만들지 않습니다.
+반드시 아래 JSON 한 개만 출력합니다(다른 설명 금지):
+{"notes":"본부장 답변·합의·의견 요약(항목별로 '- '로 시작하는 줄, 최대 8줄)","actions":[{"content":"이행해야 할 사항(한 문장)","kind":"request 또는 order","due":"YYYY-MM-DD 또는 null"}]}
+- notes: 본부장이 한 답변, 합의, 승진·이동·결원 관련 의견을 사실 위주로 짧게 적습니다.
+- actions: request는 지점이 본부에 건의·요청해 답을 기다리는 사항, order는 본부가 지점에 지시한 사항입니다. 기한이 메모에 명시된 경우에만 due를 쓰고 아니면 null로 합니다.
+- 직원은 메모에 쓰인 표기(이니셜 등) 그대로 쓰고, 실명·연락처를 새로 만들지 않습니다. 한국어로 씁니다.`;
+function hqAiParse(raw){
+  const t = String(raw || '').trim().replace(/^```(?:json)?\s*|\s*```$/g, '');
+  try{ const o = JSON.parse(t); if (o && typeof o === 'object') return { notes: String(o.notes || '').trim(), actions: (Array.isArray(o.actions) ? o.actions : []).filter(a => a && a.content).map(a => ({ content: String(a.content).trim().slice(0, 200), kind: a.kind === 'order' ? 'order' : 'request', due: /^\d{4}-\d{2}-\d{2}$/.test(a.due || '') ? a.due : '' })) }; }catch(e){}
+  return null;
+}
 function openHqModal(iv){
   const isNew = !iv, prev = isNew ? (S.hq || [])[0] : null, base = iv || {};   // 새 면담은 빈 폼(직전 내용은 버튼으로 선택 불러오기)
   const clone = (arr) => arr || [];
@@ -1419,6 +1430,24 @@ function openHqModal(iv){
       const r = { kind: el('select', {'aria-label':'구분'}, Object.entries(HQ_KIND).map(([v, t]) => el('option', {value:v, text:t}))), content: el('input', {type:'text', maxlength:200, placeholder:'예: 기업팀 후임 보충 시기 확인', 'aria-label':'이행 내용'}), due: el('input', {type:'date', 'aria-label':'기한'}) };
       r.node = el('div', {class:'frow'}, r.content, r.kind, r.due, el('button', {class:'btn sm', type:'button', text:'×', 'aria-label':'삭제', onclick: () => { arows.splice(arows.indexOf(r), 1); r.node.remove(); }}));
       arows.push(r); act.node.append(r.node); return r; };
+    const aiSrc = el('textarea', {maxlength:6000, placeholder:'면담 메모·회의 텍스트를 붙여넣으세요 (직원은 이니셜·마스킹 이름으로 적어 주세요)', style:'min-height:110px'});
+    const aiMsg = el('div', {class:'hint', style:'min-height:18px;'});
+    const aiBtn = el('button', {class:'btn sm', type:'button', text:'AI 요약해서 채우기'});
+    aiBtn.onclick = async () => {
+      if (!aiSrc.value.trim()){ aiMsg.className = 'hint err'; aiMsg.textContent = '메모를 붙여넣어 주세요.'; return; }
+      if (!piiGuard(aiBtn, aiMsg, aiSrc.value)) return;
+      aiBtn.disabled = true; aiMsg.className = 'hint'; aiMsg.textContent = 'AI가 정리하는 중…';
+      try{
+        const res = await api('/functions/v1/staff-ai', { method:'POST', body:{ system: HQ_AI_SYSTEM, user: '[면담 메모]\n' + aiSrc.value.trim() } });
+        if (!res.ok) throw new Error(await errMsg(res, 'AI 요약에 실패했습니다.'));
+        const out = hqAiParse((await res.json()).text);
+        if (!out || (!out.notes && !out.actions.length)) throw new Error('요약 결과를 읽지 못했습니다. 메모를 줄여 다시 시도해 주세요.');
+        if (out.notes) notes.value = notes.value.trim() ? notes.value.trim() + '\n' + out.notes : out.notes;
+        out.actions.forEach(a => { const r = addAct(); r.content.value = a.content; r.kind.value = a.kind; r.due.value = a.due; });
+        aiMsg.className = 'hint'; aiMsg.textContent = `AI 초안을 아래 '본부 답변·합의'와 '이행 점검 항목'에 채웠습니다(이행 ${out.actions.length}건). 내용을 확인·수정한 뒤 저장하세요.`;
+      }catch(e){ aiMsg.className = 'hint err'; aiMsg.textContent = e.message || 'AI 요약에 실패했습니다.'; }
+      aiBtn.disabled = false;
+    };
     const msg = el('div', {class:'hint', style:'min-height:18px;'});
     const save = el('button', {class:'btn primary sm', type:'button', text:'저장'});
     save.onclick = async () => {
@@ -1446,6 +1475,7 @@ function openHqModal(iv){
       isNew && prev ? el('div', {style:'margin-bottom:8px;'}, el('button', {class:'btn sm', type:'button', text:'직전 면담(' + prev.period + ')의 승진 추천·이동 희망 불러오기', onclick: (e) => { (prev.promo || []).forEach(p => promo.add(Object.assign({}, p))); (prev.moves || []).forEach(m => mov.add(Object.assign({}, m))); e.target.remove(); }})) : null,
       el('div', {class:'row2'}, el('div', {class:'field'}, el('label', {text:'평가 기간'}), period), el('div', {class:'field'}, el('label', {text:'면담일'}), date)),
       el('div', {class:'row2'}, el('div', {class:'field'}, el('label', {}, '면담자 ', el('span', {class:'opt', text:'(선택)'})), who), el('div', {class:'field'}, el('label', {}, '인사 시기 ', el('span', {class:'opt', text:'(예: 2027년 상반기)'})), term)),
+      el('details', {class:'sec', open:!iv}, el('summary', {text:'면담 결과 AI 요약 등록 (선택)'}), el('div', {style:'padding:8px 4px 4px;'}, el('div', {class:'hint', text:'본부장과 면담한 메모를 붙여넣으면 본부 답변·합의와 이행 항목 초안을 채워 줍니다. 원문은 저장하지 않으며, 저장 전에 직접 확인·수정하세요.'}), aiSrc, aiMsg, aiBtn)),
       sec('1. 승진 추천', el('div', {class:'hint', text:'직급별 승진대상자 · 직원 선택 후 승진 급·자격요건·순위·추천 사유를 입력합니다.'}), promo.node, addBtn(promo, '+ 추천 대상 추가')),
       sec('2. 인력운용 의견 · 결원 예정', el('label', {class:'inline'}, vacNone, '해당 사항 없음'), vac.node, addBtn(vac, '+ 결원 예정 추가')),
       sec('3. 인력운용 의견 · 이동 희망 직원', el('div', {class:'hint', text:'정기 인사이동 시 관내·관외 이동 희망 직원 (현소속일은 직원 부임일로 표시)'}), mov.node, addBtn(mov, '+ 이동 희망 추가')),
@@ -1502,11 +1532,11 @@ async function hqSaveFiles(iv, files){
 }
 async function hqUpload(iv, file){
   if (file.size > HQ_MAX){ toast('20MB 이하 파일만 첨부할 수 있습니다.', 'err'); return; }
-  if (!/\.(pdf|jpe?g|png|webp)$/i.test(file.name)){ toast('PDF 또는 이미지(JPG·PNG·WEBP)만 첨부할 수 있습니다. 한글·워드 파일은 PDF로 저장해 올려 주세요.', 'err'); return; }
+  if (!/\.(pdf|jpe?g|png|webp|hwp|hwpx|docx?|xlsx?|pptx?)$/i.test(file.name)){ toast('PDF·이미지·한글·워드·엑셀·PPT 파일만 첨부할 수 있습니다.', 'err'); return; }
   const ext = ((file.name.match(/\.([A-Za-z0-9]{1,5})$/) || [])[1] || 'bin').toLowerCase();
   const path = 'hq/' + iv.id + '/' + Date.now() + '.' + ext;
   toast('업로드 중…');
-  const up = await storageCall('POST', path, file, file.type || 'application/octet-stream');
+  const up = await storageCall('POST', path, file, file.type || 'application/octet-stream');   // 브라우저가 형식을 모르면(한글 등) octet-stream
   if (!up.ok){ toast(await errMsg(up, '업로드하지 못했습니다.'), 'err'); return; }
   const list = (iv.files || []).concat([{ path, name: file.name.slice(0, 120), size: file.size, at: new Date().toISOString() }]);
   if (!(await hqSaveFiles(iv, list))){ await storageCall('DELETE', path); toast('파일 정보를 저장하지 못했습니다.', 'err'); return; }
@@ -1525,7 +1555,7 @@ async function hqOpenFile(f){
 }
 function hqFilesBlock(iv){
   const files = iv.files || [];
-  const input = el('input', {type:'file', accept:'.pdf,.jpg,.jpeg,.png,.webp', style:'display:none', 'aria-label':'보고서 파일 선택', onchange: () => { const f = input.files[0]; input.value = ''; if (f) hqUpload(iv, f); }});
+  const input = el('input', {type:'file', accept:'.pdf,.jpg,.jpeg,.png,.webp,.hwp,.hwpx,.doc,.docx,.xls,.xlsx,.ppt,.pptx', style:'display:none', 'aria-label':'보고서 파일 선택', onchange: () => { const f = input.files[0]; input.value = ''; if (f) hqUpload(iv, f); }});
   return el('div', {class:'hqb'}, el('div', {class:'msec', text:'제출 보고서 파일 (' + files.length + ')'}),
     ...files.map(f => el('div', {class:'hql', style:'display:flex; gap:6px; align-items:center; flex-wrap:wrap;'},
       el('span', {text:'📎 ' + f.name + ' · ' + fmtSize(f.size) + ' · ' + fmtD(f.at.slice(0, 10)), style:'flex:1; min-width:160px; word-break:break-all;'}),
@@ -1535,7 +1565,7 @@ function hqFilesBlock(iv){
         if (!r.ok && r.status !== 404){ toast('파일을 삭제하지 못했습니다.', 'err'); return; }
         if (await hqSaveFiles(iv, files.filter(x => x.path !== f.path))){ toast('삭제했습니다.'); render(); } else toast('파일 정보를 갱신하지 못했습니다.', 'err'); }))),
     files.length ? null : el('div', {class:'hint', text:'아직 첨부된 파일이 없습니다.'}),
-    el('div', {class:'hint', style:'margin:4px 0;', text:'본부 제출 보고서(PDF·이미지, 20MB 이하 — 한글·워드는 PDF로 저장 후 첨부)를 보관합니다. 지점장만 열람할 수 있습니다.'}),
+    el('div', {class:'hint', style:'margin:4px 0;', text:'본부 제출 보고서(PDF·이미지·한글·워드·엑셀·PPT, 20MB 이하)를 보관합니다. 지점장만 열람할 수 있습니다.'}),
     input, el('button', {class:'btn sm', type:'button', text:'+ 파일 첨부', onclick: () => input.click()}));
 }
 function viewHq(){
