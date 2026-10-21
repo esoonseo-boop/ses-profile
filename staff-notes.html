@@ -110,8 +110,11 @@
   .fu{flex-wrap:wrap; align-items:flex-start;} .fu .ft{flex:1 1 200px; min-width:0;}
   .fu .res{flex-basis:100%; font-size:12.5px; color:var(--ink-soft); background:#fff; border-radius:6px; padding:4px 8px; white-space:pre-wrap;}
   .fu .fa{display:flex; gap:6px; flex-wrap:wrap; flex-basis:100%;}
+  .fu.hq{align-items:center;} .fu.hq .ft{flex:1 1 160px;} .fu.hq .fa{flex-basis:auto; flex-wrap:nowrap; order:4;} .fu.hq select{order:3;} .fu.hq .res{order:5;} .fu.hq .btn.sm{height:30px; min-height:0; padding:0 12px; font-size:12.5px; white-space:nowrap;}
   .badge.blue{background:#DBEAFE; color:var(--brand);}
   textarea.auto{max-height:60vh; overflow-y:auto;}
+  select.cp{height:34px; min-height:0; padding:4px 30px 4px 10px; font-size:13.5px; border-radius:8px; background-position:right 10px center;}
+  textarea.cp{min-height:34px; padding:6px 10px; font-size:13.5px; line-height:1.4; border-radius:8px;}
   .hrow input,.hrow select,.frow input,.frow select,input.cp{height:34px; min-height:0; padding:4px 10px; font-size:13.5px; border-radius:8px;}
   .hrow select,.frow select{padding-right:30px; background-position:right 10px center;}
   .hrow .btn,.frow .btn{height:34px; min-height:0; padding:0 12px;}
@@ -1358,12 +1361,12 @@ function modalShell(title, nodes){
 function openHqActModal(a, after){
   const iv = hqIv(a.interview_id);
   modalShell('이행 점검 · 결과 기록', (close) => {
-    const kind = el('select', {}, Object.entries(HQ_KIND).map(([v, t]) => el('option', {value:v, text:t}))); kind.value = a.kind;
-    const content = el('textarea', {maxlength:200, style:'min-height:60px'}); content.value = a.content;
-    const status = el('select', {}, Object.entries(FU_STATUS).map(([v, t]) => el('option', {value:v, text:t}))); status.value = a.status;
-    const due = el('input', {type:'date', value: a.due_date || ''});
-    const doneOn = el('input', {type:'date', value: a.done_on || todayStr()});
-    const result = el('textarea', {maxlength:300, placeholder:'본부 답변·처리 결과를 짧게 (예: 10월 말 인력 보충 검토 회신)'}); result.value = a.result || '';
+    const kind = el('select', {class:'cp'}, Object.entries(HQ_KIND).map(([v, t]) => el('option', {value:v, text:t}))); kind.value = a.kind;
+    const content = el('textarea', {class:'auto cp', maxlength:200, rows:1}); content.value = a.content;
+    const status = el('select', {class:'cp'}, Object.entries(FU_STATUS).map(([v, t]) => el('option', {value:v, text:t}))); status.value = a.status;
+    const due = el('input', {class:'cp', type:'date', value: a.due_date || ''});
+    const doneOn = el('input', {class:'cp', type:'date', value: a.done_on || todayStr()});
+    const result = el('textarea', {class:'auto cp', rows:1, maxlength:300, placeholder:'본부 답변·처리 결과를 짧게 (예: 10월 말 인력 보충 검토 회신)'}); result.value = a.result || ''; setTimeout(growAll, 0);
     const msg = el('div', {class:'hint', style:'min-height:18px;'});
     const doneRow = el('div', {class:'field'}, el('label', {text:'완료일'}), doneOn);
     const sync = () => { doneRow.style.display = status.value === 'done' ? '' : 'none'; }; status.addEventListener('change', sync); sync();
@@ -1543,7 +1546,7 @@ function hqActRow(a, refresh){
     const res = await api('/rest/v1/hq_actions?id=eq.' + a.id, { method:'PATCH', headers:{Prefer:'return=representation'}, body:{ status: stSel.value, done_on: null, updated_at: new Date().toISOString() } });
     if (res.ok){ Object.assign(a, (await res.json())[0] || {}); refresh(); } else { stSel.value = a.status; toast(await errMsg(res, '변경하지 못했습니다.'), 'err'); }
   });
-  return el('div', {class:'fu' + (done ? ' done' : '')},
+  return el('div', {class:'fu hq' + (done ? ' done' : '')},
     el('span', {class:'badge gray', text:HQ_KIND[a.kind]}),
     el('span', {class:'ft', text:`${a.content}${a.due_date ? ` (기한 ${fmtD(a.due_date)})` : ''}`}),
     late ? el('span', {class:'badge red', text:'기한 지남'}) : null, stSel,
