@@ -1605,6 +1605,42 @@ function hqFilesBlock(iv){
     el('div', {class:'hint', style:'margin:4px 0;', text:'본부 제출 보고서(PDF·이미지·한글·워드·엑셀·PPT, 20MB 이하)를 보관합니다. 지점장만 열람할 수 있습니다.'}),
     input, el('button', {class:'btn sm', type:'button', text:'+ 파일 첨부', onclick: () => input.click()}));
 }
+function hqPrint(iv){
+  const w = window.open('', '_blank');
+  if (!w){ toast('팝업이 차단되었습니다. 팝업 허용 후 다시 눌러 주세요.', 'err'); return; }
+  const E = (t) => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const acts = (S.hqa || []).filter(a => a.interview_id === iv.id);
+  const tbl = (head, rows) => rows.length ? `<table><thead><tr>${head.map(h => `<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${r.map(c => `<td>${E(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>` : '<p class="none">해당 없음</p>';
+  const sec = (t, body) => `<h2>${t}</h2>${body}`;
+  const html = `<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>${E(iv.period)} 본부 면담 기록</title>
+<style>
+@page{size:A4; margin:16mm 14mm;}
+body{font-family:'Pretendard','Malgun Gothic','Apple SD Gothic Neo',sans-serif; color:#111; font-size:11pt; line-height:1.55; margin:0;}
+h1{font-size:17pt; margin:0 0 4px;} .meta{color:#555; font-size:10pt; margin-bottom:10px; border-bottom:2px solid #1B5EFF; padding-bottom:8px;}
+h2{font-size:12pt; color:#1B5EFF; margin:16px 0 6px; padding-left:8px; border-left:4px solid #1B5EFF;}
+.band{background:#E8EFFF; color:#1B5EFF; font-weight:800; padding:5px 10px; border-radius:6px; margin:14px 0 2px;} .band.res{background:#E6F6EC; color:#157347;}
+table{width:100%; border-collapse:collapse; font-size:10pt; margin-bottom:4px;} th,td{border:1px solid #bbb; padding:5px 7px; text-align:left; vertical-align:top;} th{background:#f2f4f8;}
+.none{margin:2px 0; color:#555;} .box{white-space:pre-wrap; border:1px solid #bbb; border-radius:6px; padding:8px 10px;}
+tr{page-break-inside:avoid;} h2{page-break-after:avoid;} .foot{margin-top:18px; font-size:9pt; color:#777; border-top:1px solid #ccc; padding-top:6px;}
+.bar{position:sticky; top:0; background:#fff; padding:8px 0; text-align:right;} .bar button{padding:8px 18px; border-radius:999px; border:0; background:#1B5EFF; color:#fff; font-weight:700; cursor:pointer;}
+@media print{.bar{display:none;}}
+</style></head><body>
+<div class="bar"><button onclick="window.print()">인쇄 / PDF 저장</button></div>
+<h1>지역본부장 면담 기록 — ${E(iv.period)}</h1>
+<div class="meta">${E(me.branch_name || '')} · 면담일 ${E(fmtD(iv.interview_on))}${iv.interviewer ? ' · 면담자 ' + E(iv.interviewer) : ''}${iv.target_term ? ' · 대상 인사시기 ' + E(iv.target_term) : ''}</div>
+<div class="band">① 사전 준비 (본부 제출 자료)</div>
+${sec('승진 추천', tbl(['순위', '급', '자격요건', '대상자', '추천 사유'], (iv.promo || []).map(p => [p.rank || '', p.grade || '', p.req || '', stLabel(p.staff_id), p.reason || ''])))}
+${sec('이동 희망 직원', tbl(['직원', '직급', '현소속일', '희망 지역', '이동 사유'], (iv.moves || []).map(m => { const x = staffById(m.staff_id); return [stLabel(m.staff_id), (x && x.rank_title) || '', x && x.joined_on ? fmtD(x.joined_on) : '', m.hope || '', m.reason || '']; })))}
+${sec('결원 예정', iv.vacancy_none || !(iv.vacancy || []).length ? '<p class="none">해당 사항 없음</p>' : tbl(['직원', '예정 시기', '사유', '비고'], iv.vacancy.map(v => [stLabel(v.staff_id), v.when || '', v.reason || '', v.note || ''])))}
+${iv.agenda ? sec('건의·요청 안건', `<div class="box">${E(iv.agenda)}</div>`) : ''}
+<div class="band res">② 면담 결과</div>
+${sec('본부 답변·합의', iv.notes ? `<div class="box">${E(iv.notes)}</div>` : '<p class="none">기록 전</p>')}
+${sec('이행 점검 항목', acts.length ? tbl(['구분', '내용', '기한', '상태', '답변·처리 결과'], acts.map(a => [HQ_KIND[a.kind] || '', a.content, a.due_date ? fmtD(a.due_date) : '', FU_STATUS[a.status] || '', a.result || ''])) : '<p class="none">등록된 항목 없음</p>')}
+<div class="foot">지점장 전용 · 대외비 — 직원 정보는 이니셜·마스킹 이름으로만 표기되며 외부에 배포하지 마세요. 출력일 ${E(fmtD(todayStr()))}</div>
+</body></html>`;
+  w.document.open(); w.document.write(html); w.document.close();
+  setTimeout(() => { try{ w.focus(); w.print(); }catch(e){} }, 400);
+}
 function hqRefresh(){
   const d = S.hqDetail; render();
   if (d){ d.close(); const iv = hqIv(d.id); if (iv) openHqDetail(iv); }
@@ -1631,6 +1667,7 @@ function openHqDetail(iv){
       el('div', {class:'actions', style:'margin-top:12px;'},
         el('button', {class:'btn primary sm', type:'button', text:'수정', onclick: () => { closeAll(); openHqModal(iv); }}),
         el('button', {class:'btn sm', type:'button', text:'복사', onclick: () => copyText(hqSummaryText(iv), '면담 자료를 복사했습니다.')}),
+        el('button', {class:'btn sm', type:'button', text:'출력', onclick: () => hqPrint(iv)}),
         confirmButton('삭제', '정말 삭제', async () => {
           for (const f of (iv.files || [])) await storageCall('DELETE', f.path);
           const res = await api('/rest/v1/hq_interviews?id=eq.' + iv.id, { method:'DELETE' });
