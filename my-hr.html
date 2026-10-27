@@ -91,7 +91,7 @@ footer button{flex:1;border:0;border-radius:99px;padding:14px;font:700 15px Pret
       <label><input type="radio" name="move" value="필히 이동하고 싶다"><span>필히 이동하고 싶다</span></label>
     </div>
     <p class="hint" style="margin-top:12px">사유기재 (미희망 시에는 미희망 사유 기재)</p>
-    <textarea data-k="moveWhy" data-max="0"></textarea>
+    <textarea data-k="moveWhy" data-max="0" placeholder="예) 부임 3개월차로 거래기업 관계 구축과 직원 안정화를 위해 계속 근무 희망"></textarea>
     <div class="cnt"><span></span><span><b>0</b>자</span></div>
   </div>
   <div class="card"><h3>나. 통근방법</h3>
@@ -130,11 +130,11 @@ footer button{flex:1;border:0;border-radius:99px;padding:14px;font:700 15px Pret
 <section data-s="1">
   <p class="hint" style="padding:0 6px">※ 인사운용 시 중요자료로 활용되므로 구체적으로 기재</p>
   <div class="card"><h3>점주환경</h3><p class="hint">입주위치, 지역특성(산업), 지역 발전계획, 유동인구, 금융기관간 경쟁, 기타 점포관련 특이사항 등</p>
-    <textarea data-k="env" data-max="0"></textarea><div class="cnt"><span></span><span><b>0</b>자</span></div></div>
+    <textarea data-k="env" data-max="0" placeholder="입주위치 → 지역특성(산업) → 발전계획 → 유동인구 → 금융기관 경쟁 → 특이사항 순으로 3~5줄"></textarea><div class="cnt"><span></span><span><b>0</b>자</span></div></div>
   <div class="card"><h3>거래고객유형</h3><p class="hint">주 고객 비중(개인/기업), 규모, 업종, 연령층, 내점 빈도, 주요 요청사항, 기타 거래고객 특성 등</p>
-    <textarea data-k="custType" data-max="0"></textarea><div class="cnt"><span></span><span><b>0</b>자</span></div></div>
+    <textarea data-k="custType" data-max="0" placeholder="주 고객 비중(기업/개인) → 규모·업종 → 연령층 → 내점 빈도 → 주요 요청사항"></textarea><div class="cnt"><span></span><span><b>0</b>자</span></div></div>
   <div class="card"><h3>성장성</h3><p class="hint">점유율, 안정성, 성장여력(규모/이익), 신규고객 유입 및 특성 등</p>
-    <textarea data-k="growth" data-max="0"></textarea><div class="cnt"><span></span><span><b>0</b>자</span></div></div>
+    <textarea data-k="growth" data-max="0" placeholder="점유율 → 안정성 → 성장여력(규모/이익) → 신규고객 유입"></textarea><div class="cnt"><span></span><span><b>0</b>자</span></div></div>
   <div class="card"><h3>기타</h3>
     <textarea data-k="branchEtc" data-max="0"></textarea><div class="cnt"><span></span><span><b>0</b>자</span></div></div>
 </section>
@@ -158,7 +158,7 @@ footer button{flex:1;border:0;border-radius:99px;padding:14px;font:700 15px Pret
 <!-- 4 인사운용 의견 -->
 <section data-s="3">
   <div class="card"><h3>인사운용에 대한 의견</h3><p class="hint">한글 150자 이내</p>
-    <textarea data-k="opinion" data-max="150"></textarea><div class="cnt"><span></span><span><b>0</b> / 150자</span></div></div>
+    <textarea data-k="opinion" data-max="150" placeholder="150자 이내 · 현 인사운용에 대한 의견/건의 1~2가지"></textarea><div class="cnt"><span></span><span><b>0</b> / 150자</span></div></div>
 </section>
 
 <!-- 5 개인 애로사항 -->
@@ -286,6 +286,13 @@ const KEY="myhr_selfreport_v1";
 let S={};
 try{S=JSON.parse(localStorage.getItem(KEY)||"{}")}catch(e){S={}}
 if(!S.f)S.f={};
+/* HR시스템 화면(2026-10-27 사진)에서 확인된 1단계 기본값 — 비어 있을 때만 채움 */
+const DEF={move:"계속 있고 싶다",commute:"자가용",ctime:"1시간이내",cdist:"41",remote:"해당있음(격지 근무중)",rtype:"거주지",noExtra:true,
+env:"안산선 상록수역 1번출구 200m, 본삼로 49(본오동) 대영빌딩 1~2층에 입주한 주상형 일반형지점(1995년 개점). 아파트 단지·상가·다가구가 혼재한 중심상업지역으로 본오동 행정복지센터, 본오공원, 세무서 등 집객시설이 인접함. 경기침체로 상가 활성화에는 한계가 있음. 반경 3km 내 타행은 국민 3개, 신한 2개, 우리 1개, 하나 1개 점포가 분포함. 점주권 변동 특이사항 없음.",
+custType:"주 고객은 인근 아파트 거주 개인고객과 상가 임차인(자영업자)이며, 내점고객은 일 126~145명 수준, 고령층 비율 15.1%임. 총여신 3,864억 중 기업이 3,368억(87%)이고, 총수신 4,830억은 개인 2,748억(57%)·기업 2,082억(43%)임. 여신업체 759개 중 도소매업 22%, 과학교육업 11%, 전기장비제조업 6% 순이며, 여신잔액은 과학교육업 20%, 전기장비제조업 10%, 부동산업·화학제조업 각 9%, 도소매업 8%로 업종이 분산됨.",
+growth:"총여신·총수신 합계가 2023.12 7,105억 → 2024.12 8,221억 → 2025.12 8,453억 → 2026.9 8,694억으로 꾸준히 증가함(2025.12 대비 +241억, +2.9%). 총수신 +180억, 총여신 +61억이며 기업여신(3,368억) 중심의 성장세임. 외환은 2026.9 누계 43,268천불(수출 26,964·수입 13,253·무역외 3,051), 영업이익 누계는 24.2억원임. 상권 정체 속에서도 기업 거래 기반의 성장여력이 있음.",
+branchEtc:"2026.4 전체 레이아웃 공사를 실시하였으며 관내 내점고객 최다 점포임. 직원 14명, VM팀·SOHO팀 운영."};
+Object.keys(DEF).forEach(k=>{if(S.f[k]==null)S.f[k]=DEF[k]});
 if(!S.r1)S.r1=[]; if(!S.r2)S.r2=[];
 if(!S.br)S.br=[{n:"",w:""},{n:"",w:""},{n:"",w:""}];
 if(S.step==null)S.step=0;
