@@ -70,6 +70,34 @@ footer button{flex:1;border:0;border-radius:99px;padding:14px;font:700 15px Pret
 .ind{font-size:12.5px;color:var(--sub);line-height:1.55;margin:6px 0 0;padding-left:16px}
 #toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:#222;color:#fff;padding:10px 18px;border-radius:99px;font-size:13px;opacity:0;transition:.25s;pointer-events:none;z-index:9}
 #toast.show{opacity:.92}
+
+/* ---- simplified layout ---- */
+header{padding:12px 14px 10px}
+header h1{font-size:16px}
+header p{font-size:11px;margin:2px 0 0}
+.bar{height:4px;margin-top:8px}
+nav{flex-wrap:wrap;overflow:visible;padding:10px 12px 2px;gap:6px}
+nav button{padding:7px 12px;font-size:13px}
+.mode{padding:10px 12px 0}
+.mode button{padding:9px;font-size:13px}
+main{padding:6px 12px}
+.card{padding:14px;margin:8px 0;border-radius:16px}
+.card h3{font-size:15px;margin:0 0 8px}
+.hint{font-size:12px;line-height:1.55;color:var(--sub);margin:0 0 8px;overflow-wrap:anywhere}
+details.hd{margin:0 0 10px}
+details.hd summary{cursor:pointer;font-size:12px;color:var(--blue);font-weight:600;list-style:none}
+details.hd summary::-webkit-details-marker{display:none}
+details.hd summary::before{content:"ⓘ ";}
+details.hd div{font-size:12px;line-height:1.6;color:var(--sub);margin-top:6px;overflow-wrap:anywhere;word-break:keep-all}
+textarea{overflow:hidden;resize:none;min-height:84px;line-height:1.6;overflow-wrap:anywhere;word-break:keep-all}
+.ind{font-size:13px;line-height:1.6;overflow-wrap:anywhere;word-break:keep-all}
+.opts.col span{white-space:normal;overflow-wrap:anywhere;word-break:keep-all}
+details#subCard{background:var(--card);border-radius:16px;padding:12px 14px;margin:8px 0;box-shadow:0 1px 4px rgba(27,94,255,.08)}
+details#subCard summary{cursor:pointer;font-weight:700;font-size:14px}
+details#subCard .opts{margin:10px 0 8px}
+details.star{margin-top:10px}
+details.star summary{cursor:pointer;color:var(--blue);font-weight:600;font-size:13px}
+#sum{overflow-wrap:anywhere}
 </style>
 </head>
 <body>
@@ -85,15 +113,15 @@ footer button{flex:1;border:0;border-radius:99px;padding:14px;font:700 15px Pret
 <div class="mode"><button id="mRep">자기신고</button><button id="mEval">자기평가</button></div>
 <nav id="nav"></nav>
 <main>
-<div class="card" id="subCard">
-  <h3>반기별 제출 현황 <span id="subPeriod" style="color:var(--blue)"></span></h3>
-  <p class="hint">자기신고·자기평가는 6개월(상반기·하반기)마다 새로 작성합니다. 상단에서 반기를 바꾸면 기록이 따로 보관됩니다.</p>
-  <div class="opts" style="margin-bottom:8px">
+<details id="subCard">
+  <summary>제출 현황 <span id="subPeriod" style="color:var(--blue)"></span></summary>
+  <p class="hint" style="margin-top:8px">자기신고·자기평가는 6개월(상·하반기)마다 새로 작성합니다.</p>
+  <div class="opts">
     <label><input type="checkbox" id="subRep"><span>자기신고 제출완료</span></label>
     <label><input type="checkbox" id="subEval"><span>자기평가 제출완료</span></label>
   </div>
   <button class="mini" id="copyPrev">이전 반기 개인신상 불러오기</button>
-</div>
+</details>
 
 <!-- 1 개인신상 -->
 <section data-s="0">
@@ -187,11 +215,7 @@ footer button{flex:1;border:0;border-radius:99px;padding:14px;font:700 15px Pret
 
 <!-- 자기평가 -->
 <div id="evalSec" style="display:none">
-  <div class="card"><h3>평가지표 자기평가</h3>
-    <p class="hint">점수 선택 → 합계 자동 계산 (화면의 행 이름 일부가 잘려 보여 임시 이름 사용)</p></div>
-
-  <div class="card"><h3>평가기간 내 업적</h3>
-    <p class="ind" style="padding:0">경영실적평가에 의한 「그룹내」 순위 반영 — 자기평가 선택 없음</p></div>
+  <p class="hint" style="padding:4px 6px 0">점수를 고르면 합계가 자동 계산됩니다. 평가기간 내 업적은 경영실적평가 그룹내 순위로 반영되어 선택 항목이 없습니다. 항목명 일부는 임시 이름입니다.</p>
 
   <div class="card"><h3>영업·마케팅 <span style="font-weight:400;font-size:12px;color:var(--sub)">(이름 미확인)</span></h3>
     <ul class="ind"><li>부점의 이익창출과 고객만족을 위해 점주환경에 부합하는 영업전략 및 실천 방안을 수립하고 스스로 실천하며 직원들에게 효과적으로 전파하고 독려함</li>
@@ -219,13 +243,13 @@ footer button{flex:1;border:0;border-radius:99px;padding:14px;font:700 15px Pret
 
   <div class="card"><h3>평정대상자 (우수사례)</h3>
     <p class="hint">필요시 기재 · 한글 2000자 내<br>① 본인의 업무추진내용(특히 성과에 기여한 사례 포함) 중 구체적인 우수사례(연체관리, 이탈방지 등) ② 주변 직원들과 협업을 통해 이루어낸 성과 중 우수사례(타부서 공조, 협업사례 등) ③ 위기상황(금융사고, 재해 등)에 적절히 대응한 우수사례(금융사기피해예방 활동 등)</p>
-    <div class="star">
+    <details class="star"><summary>STAR 작성 도우미 (상황·과제·실행·결과)</summary><div class="star" style="margin-top:8px">
       <label>상황(Situation): 업무 추진배경 및 진행경과 등</label><textarea data-e="stS"></textarea>
       <label>과제(Task): 담당한 업무의 내용, 이슈 등 (업무의 난이도나 중요성 설명)</label><textarea data-e="stT"></textarea>
       <label>실행(Action): 구체적인 업무추진 과정 등 (과정상 특이사항, 문제해결을 위해 노력한 정도)</label><textarea data-e="stA"></textarea>
       <label>결과(Result): 업무수행에 따른 성과, 효과 등</label><textarea data-e="stR"></textarea>
       <button class="mini" id="starMerge" style="justify-self:start">STAR → 우수사례에 반영</button>
-    </div>
+    </div></details>
     <textarea data-e="evCase" data-ev="1" style="min-height:200px;margin-top:12px"></textarea>
     <div class="cnt"><span class="evc"></span><span></span></div></div>
 </div>
@@ -470,6 +494,24 @@ $("#subRep").checked=!!S.sub.report;$("#subEval").checked=!!S.sub.eval;
 $("#subRep").onchange=e=>{S.sub.report=e.target.checked;save();toast(e.target.checked?"자기신고 제출완료 표시":"해제")};
 $("#subEval").onchange=e=>{S.sub.eval=e.target.checked;save();toast(e.target.checked?"자기평가 제출완료 표시":"해제")};
 $("#copyPrev").onclick=()=>{if(window.copyPrev)window.copyPrev();else toast("로그인 후 사용할 수 있습니다")};
+/* ---- 화면 단순화: 입력칸 자동 높이, 긴 안내 접기 ---- */
+(function(){
+  $$(".hint").forEach(el=>{
+    if(el.closest("#subCard")||el.closest("details.hd"))return;
+    if(el.textContent.trim().length<=60)return;
+    const d=document.createElement("details");d.className="hd";
+    d.innerHTML='<summary>작성 안내</summary><div></div>';
+    d.lastChild.innerHTML=el.innerHTML;
+    el.replaceWith(d);
+  });
+})();
+function fit(el){el.style.height="auto";el.style.height=(el.scrollHeight+2)+"px"}
+function fitAll(){$$("textarea").forEach(el=>{if(el.offsetParent!==null)fit(el)})}
+document.addEventListener("input",e=>{if(e.target.tagName==="TEXTAREA")fit(e.target)});
+document.addEventListener("toggle",fitAll,true);
+window.addEventListener("resize",fitAll);
+const _refresh=refresh;
+refresh=function(){_refresh();requestAnimationFrame(fitAll);setTimeout(fitAll,250)};
 refresh();
 </script>
 </body>
