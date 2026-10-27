@@ -76,11 +76,24 @@ footer button{flex:1;border:0;border-radius:99px;padding:14px;font:700 15px Pret
 <header>
   <h1>자기신고 · 신고서작성(부점장)</h1>
   <p>HR시스템 입력 전 초안 작성용 · 이 기기에 자동 저장</p>
+  <div style="display:flex;gap:8px;align-items:center;margin-top:10px">
+    <select id="period" style="width:auto;padding:6px 10px;border-radius:99px;font:700 13px Pretendard;border:0;color:#1B5EFF"></select>
+    <span id="cycle" style="font-size:12px;opacity:.9"></span>
+  </div>
   <div class="bar"><i id="bar"></i></div>
 </header>
 <div class="mode"><button id="mRep">자기신고</button><button id="mEval">자기평가</button></div>
 <nav id="nav"></nav>
 <main>
+<div class="card" id="subCard">
+  <h3>반기별 제출 현황 <span id="subPeriod" style="color:var(--blue)"></span></h3>
+  <p class="hint">자기신고·자기평가는 6개월(상반기·하반기)마다 새로 작성합니다. 상단에서 반기를 바꾸면 기록이 따로 보관됩니다.</p>
+  <div class="opts" style="margin-bottom:8px">
+    <label><input type="checkbox" id="subRep"><span>자기신고 제출완료</span></label>
+    <label><input type="checkbox" id="subEval"><span>자기평가 제출완료</span></label>
+  </div>
+  <button class="mini" id="copyPrev">이전 반기 개인신상 불러오기</button>
+</div>
 
 <!-- 1 개인신상 -->
 <section data-s="0">
@@ -128,7 +141,7 @@ footer button{flex:1;border:0;border-radius:99px;padding:14px;font:700 15px Pret
 
 <!-- 2 점주현황 및 지점정보 -->
 <section data-s="1">
-  <p class="hint" style="padding:0 6px">※ 인사운용 시 중요자료로 활용되므로 구체적으로 기재</p>
+  <p class="hint" style="padding:0 6px">※ 2~6단계의 항목명·안내문·글자수 제한은 화면 확인 전 임시값입니다. HR시스템 화면과 대조하세요.</p>
   <div class="card"><h3>점주환경</h3><p class="hint">입주위치, 지역특성(산업), 지역 발전계획, 유동인구, 금융기관간 경쟁, 기타 점포관련 특이사항 등</p>
     <textarea data-k="env" data-max="0" placeholder="입주위치 → 지역특성(산업) → 발전계획 → 유동인구 → 금융기관 경쟁 → 특이사항 순으로 3~5줄"></textarea><div class="cnt"><span></span><span><b>0</b>자</span></div></div>
   <div class="card"><h3>거래고객유형</h3><p class="hint">주 고객 비중(개인/기업), 규모, 업종, 연령층, 내점 빈도, 주요 요청사항, 기타 거래고객 특성 등</p>
@@ -142,22 +155,19 @@ footer button{flex:1;border:0;border-radius:99px;padding:14px;font:700 15px Pret
 <!-- 3 희망근무지역 -->
 <section data-s="2">
   <div class="card"><h3>가. 희망근무지역(국내)</h3>
-    <p class="hint">화면 일부만 확인된 목록입니다. 빠진 지역은 아래 직접입력에 적으세요.</p>
-    <div class="region">
-      <div><h4>1지망</h4><div class="pick" id="p1"></div></div>
-      <div><h4>2지망</h4><div class="pick" id="p2"></div></div>
-    </div>
-    <input type="text" data-k="regionEtc" placeholder="직접입력 (누락 지역)" style="margin-top:10px">
+    <p class="hint">※ 실제 HR시스템 화면의 선택 항목과 다를 수 있습니다. 직접 입력해 두고 화면에서 선택하세요.</p>
+    <input type="text" data-k="region1" placeholder="1지망" style="margin-bottom:8px">
+    <input type="text" data-k="region2" placeholder="2지망">
   </div>
   <div class="card"><h3>나. 희망근무 부점(국내)</h3>
-    <p class="hint">※ 3개 필수선택 / 사유를 구체적으로 기재 · 한글 150자 이내</p>
+    <p class="hint">※ 필수 개수·글자수 제한은 HR시스템 화면에서 확인 (아래 150자는 임시 기준)</p>
     <div id="branches"></div>
   </div>
 </section>
 
 <!-- 4 인사운용 의견 -->
 <section data-s="3">
-  <div class="card"><h3>인사운용에 대한 의견</h3><p class="hint">한글 150자 이내</p>
+  <div class="card"><h3>인사운용에 대한 의견</h3><p class="hint">150자 이내는 임시 기준입니다. 화면의 실제 제한을 확인하세요.</p>
     <textarea data-k="opinion" data-max="150" placeholder="150자 이내 · 현 인사운용에 대한 의견/건의 1~2가지"></textarea><div class="cnt"><span></span><span><b>0</b> / 150자</span></div></div>
 </section>
 
@@ -244,17 +254,19 @@ footer button{flex:1;border:0;border-radius:99px;padding:14px;font:700 15px Pret
 <script>
 (function(){
 const SB=supabase.createClient("https://oqeiaaworcarixndtomj.supabase.co","sb_publishable_xVY0MJETNgpC820jW4yO1w_XUd9QzqZ");
-const LKEY="myhr_selfreport_v1",PERIOD="2026-하반기";
+let PERIOD;try{PERIOD=localStorage.getItem("myhr_period")}catch(e){}
+if(!PERIOD){const d=new Date();PERIOD=d.getFullYear()+"-"+(d.getMonth()<6?"상반기":"하반기")}
+const LKEY="myhr_selfreport_v1_"+PERIOD;
 const g=document.getElementById("gate"),gm=document.getElementById("gmsg");
 let uid=null,ok=false,timer=null;
 function sync(t){const p=document.querySelector("header p");if(p)p.textContent=t}
 async function start(session){
   uid=session.user.id;
-  const {data}=await SB.from("my_hr").select("report,eval,updated_at").eq("period",PERIOD).maybeSingle();
+  const {data}=await SB.from("my_hr").select("report,eval,updated_at,submitted_report,submitted_eval").eq("period",PERIOD).maybeSingle();
   let L={};try{L=JSON.parse(localStorage.getItem(LKEY)||"{}")}catch(e){}
   if(data&&Date.parse(data.updated_at)>(L.ts||0)){
     const r=data.report||{};
-    L.f=r.f||{};L.r1=r.r1||[];L.r2=r.r2||[];L.br=r.br||L.br;L.e=data.eval||{};L.ts=Date.parse(data.updated_at);
+    L.f=r.f||{};L.r1=r.r1||[];L.r2=r.r2||[];L.br=r.br||L.br;L.e=data.eval||{};L.sub={report:!!data.submitted_report,eval:!!data.submitted_eval};L.ts=Date.parse(data.updated_at);
     localStorage.setItem(LKEY,JSON.stringify(L));location.reload();return;
   }
   g.style.display="none";ok=true;sync("클라우드 저장됨 · 본인만 열람");
@@ -262,7 +274,7 @@ async function start(session){
 }
 function push(S){
   sync("저장 중…");
-  SB.from("my_hr").upsert({owner_id:uid,period:PERIOD,report:{f:S.f,r1:S.r1,r2:S.r2,br:S.br},eval:S.e||{},updated_at:new Date(S.ts).toISOString()},{onConflict:"owner_id,period"})
+  SB.from("my_hr").upsert({owner_id:uid,period:PERIOD,report:{f:S.f,r1:S.r1,r2:S.r2,br:S.br},eval:S.e||{},submitted_report:!!(S.sub&&S.sub.report),submitted_eval:!!(S.sub&&S.sub.eval),updated_at:new Date(S.ts).toISOString()},{onConflict:"owner_id,period"})
    .then(({error})=>{sync(error?"저장 실패 · 권한 확인 필요(기기에는 저장됨)":"클라우드 저장됨 · 본인만 열람")});
 }
 window.cloudSave=function(S){if(!ok)return;clearTimeout(timer);timer=setTimeout(()=>push(S),800)};
@@ -274,6 +286,16 @@ async function login(){
 }
 document.getElementById("gBtn").onclick=login;
 document.getElementById("gPw").onkeydown=e=>{if(e.key==="Enter")login()};
+window.copyPrev=async function(){
+  if(!ok){return}
+  const pp=window.prevHalf(PERIOD);
+  const {data}=await SB.from("my_hr").select("report").eq("period",pp).maybeSingle();
+  if(!data||!data.report||!data.report.f){document.getElementById("toast").textContent="이전 반기("+pp+") 기록이 없습니다";document.getElementById("toast").classList.add("show");setTimeout(()=>document.getElementById("toast").classList.remove("show"),1600);return}
+  let L={};try{L=JSON.parse(localStorage.getItem(LKEY)||"{}")}catch(e){}
+  L.f=L.f||{};
+  ["move","commute","ctime","cdist","remote","rtype","noExtra"].forEach(k=>{if(data.report.f[k]!=null)L.f[k]=data.report.f[k]});
+  L.ts=Date.now();localStorage.setItem(LKEY,JSON.stringify(L));location.reload();
+};
 window.myhrLogout=async()=>{await SB.auth.signOut();location.reload()};
 SB.auth.getSession().then(({data})=>{if(data.session)start(data.session)});
 })();
@@ -282,13 +304,31 @@ SB.auth.getSession().then(({data})=>{if(data.session)start(data.session)});
 <script>
 const STEPS=["1 개인신상","2 점주현황·지점정보","3 희망근무지역","4 인사운용 의견","5 개인 애로사항","6 기타"];
 const REGIONS=["본부부서","서울시내(강남)","서울시내(강동)","서울시내(강북)","서울시내(남부)","서울시내(남중)","서울시내(서부)","서울시내(중부)","인천시내(인천동부)","경기지역(강동)","경기지역(강북)","경기지역(남부)","경기지역(서부)","경기지역(인천동부)","경기지역(경기남부)","경기지역(경수)","강원지역(경동·강원)","부산시내(부산)","부산시내(부산·울산)","대구시내(대구·경북동부)","대구시내(대구·경북서부)","경북지역(대구·경북동부)","경남지역(경남)","전남지역(호남)","전북지역(호남)","충북지역(충북)","충남지역(충남)"];
-const KEY="myhr_selfreport_v1";
+function halfNow(){const d=new Date();return d.getFullYear()+"-"+(d.getMonth()<6?"상반기":"하반기")}
+function nextHalf(p){const[y,h]=p.split("-");return h==="상반기"?y+"-하반기":(+y+1)+"-상반기"}
+function prevHalf(p){const[y,h]=p.split("-");return h==="하반기"?y+"-상반기":(+y-1)+"-하반기"}
+let PERIOD;try{PERIOD=localStorage.getItem("myhr_period")}catch(e){}
+if(!PERIOD)PERIOD=halfNow();
+window.PERIOD=PERIOD;window.prevHalf=prevHalf;
+const KEY="myhr_selfreport_v1_"+PERIOD;
+try{if(PERIOD==="2026-하반기"&&!localStorage.getItem(KEY)&&localStorage.getItem("myhr_selfreport_v1"))localStorage.setItem(KEY,localStorage.getItem("myhr_selfreport_v1"))}catch(e){}
 let S={};
 try{S=JSON.parse(localStorage.getItem(KEY)||"{}")}catch(e){S={}}
 if(!S.f)S.f={};
 if(!S.r1)S.r1=[]; if(!S.r2)S.r2=[];
 if(!S.br)S.br=[{n:"",w:""},{n:"",w:""},{n:"",w:""}];
 if(S.step==null)S.step=0;
+if(!S.sub)S.sub={report:false,eval:false};
+(function(){
+  const out=[];const ny=new Date().getFullYear()+1;
+  for(let y=2026;y<=ny;y++)["상반기","하반기"].forEach(x=>{if(!(y===2026&&x==="상반기"))out.push(y+"-"+x)});
+  if(!out.includes(PERIOD))out.push(PERIOD);
+  const sel=document.getElementById("period");
+  sel.innerHTML=out.map(p=>`<option value="${p}"${p===PERIOD?" selected":""}>${p.replace("-"," ")}</option>`).join("");
+  sel.onchange=()=>{try{localStorage.setItem("myhr_period",sel.value)}catch(e){}location.reload()};
+  document.getElementById("cycle").textContent="6개월 주기 · 다음 "+nextHalf(PERIOD).replace("-"," ");
+  document.getElementById("subPeriod").textContent="· "+PERIOD.replace("-"," ");
+})();
 const $=(q,e=document)=>e.querySelector(q), $$=(q,e=document)=>[...e.querySelectorAll(q)];
 const save=()=>{S.ts=Date.now();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}if(window.cloudSave)window.cloudSave(S)};
 function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1400)}
@@ -297,12 +337,6 @@ function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");se
 const nav=$("#nav");
 STEPS.forEach((s,i)=>{const b=document.createElement("button");b.textContent=s;b.onclick=()=>go(i);nav.appendChild(b)});
 
-// regions
-["p1","p2"].forEach((id,n)=>{
-  const k=n?"r2":"r1";
-  $("#"+id).innerHTML=REGIONS.map(r=>`<label><input type="checkbox" value="${r}" ${S[k].includes(r)?"checked":""}> ${r}</label>`).join("");
-  $("#"+id).onchange=e=>{S[k]=$$("input:checked",$("#"+id)).map(x=>x.value);save();refresh()};
-});
 
 // branches
 function drawBranches(){
@@ -354,7 +388,7 @@ function summary(){
   const f=S.f,L=[];
   L.push("[1 개인신상]","이동희망: "+(f.move||"-"),"사유: "+(f.moveWhy||"-"),"통근방법: "+(f.commute||"-"),"통근시간: "+(f.ctime||"-"),"통근거리: "+(f.cdist?f.cdist+"Km":"-"),"격지근무: "+(f.remote||"-"),"격지유형: "+(f.rtype||"-"),"격지 추가의견: "+(f.noExtra?"추가의견 없음":(f.remoteExtra||"-")));
   L.push("","[2 점주현황·지점정보]","점주환경: "+(f.env||"-"),"거래고객유형: "+(f.custType||"-"),"성장성: "+(f.growth||"-"),"기타: "+(f.branchEtc||"-"));
-  L.push("","[3 희망근무지역]","1지망: "+(S.r1.join(", ")||"-"),"2지망: "+(S.r2.join(", ")||"-"),"직접입력: "+(f.regionEtc||"-"));
+  L.push("","[3 희망근무지역]","1지망: "+(f.region1||"-"),"2지망: "+(f.region2||"-"));
   S.br.forEach((b,i)=>L.push(`희망부점${i+1}: ${b.n||"-"} / ${b.w||"-"}`));
   L.push("","[4 인사운용 의견]",f.opinion||"-","","[5 개인 애로사항]",f.hardship||"-","","[6 기타]",f.etc||"-");
   return L.join("\n");
@@ -364,7 +398,7 @@ function doneFlags(){
   return [
     !!(f.move&&f.commute&&f.ctime&&f.cdist&&f.remote&&(f.remote==="해당없음"||f.rtype)&&(f.rtype!=="기타"||f.remoteExtra)),
     !!(f.env&&f.custType&&f.growth),
-    S.br.every(b=>b.n&&b.w&&b.w.length<=150)&&S.r1.length>0,
+    S.br.every(b=>b.n&&b.w&&b.w.length<=150)&&!!f.region1,
     !!(f.opinion&&f.opinion.length<=150),
     !!f.hardship, !!f.etc];
 }
@@ -432,6 +466,10 @@ $("#mEval").onclick=()=>setMode("eval");
 $("#prev").onclick=()=>go(S.step-1);
 $("#next").onclick=()=>go(S.step+1);
 $("#copyAll").onclick=()=>copy(S.mode==="eval"?evSummary():summary());
+$("#subRep").checked=!!S.sub.report;$("#subEval").checked=!!S.sub.eval;
+$("#subRep").onchange=e=>{S.sub.report=e.target.checked;save();toast(e.target.checked?"자기신고 제출완료 표시":"해제")};
+$("#subEval").onchange=e=>{S.sub.eval=e.target.checked;save();toast(e.target.checked?"자기평가 제출완료 표시":"해제")};
+$("#copyPrev").onclick=()=>{if(window.copyPrev)window.copyPrev();else toast("로그인 후 사용할 수 있습니다")};
 refresh();
 </script>
 </body>
