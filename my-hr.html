@@ -107,6 +107,7 @@ details.star summary{cursor:pointer;color:var(--blue);font-weight:600;font-size:
   <div style="display:flex;gap:8px;align-items:center;margin-top:10px">
     <select id="period" style="width:auto;padding:6px 10px;border-radius:99px;font:700 13px Pretendard;border:0;color:#1B5EFF"></select>
     <span id="cycle" style="font-size:12px;opacity:.9"></span>
+    <button id="saveNow" type="button" style="margin-left:auto;border:0;border-radius:99px;padding:7px 14px;font:700 13px Pretendard;background:#fff;color:#1B5EFF;cursor:pointer">지금 저장</button>
   </div>
   <div class="bar"><i id="bar"></i></div>
 </header>
@@ -282,7 +283,8 @@ let PERIOD;try{PERIOD=localStorage.getItem("myhr_period")}catch(e){}
 if(!PERIOD){const d=new Date();PERIOD=d.getFullYear()+"-"+(d.getMonth()<6?"상반기":"하반기")}
 const LKEY="myhr_selfreport_v1_"+PERIOD;
 const g=document.getElementById("gate"),gm=document.getElementById("gmsg");
-let uid=null,ok=false,timer=null;
+let uid=null,ok=false,timer=null,lastS=null;
+function hm(){const d=new Date();return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0")}
 function sync(t){const p=document.querySelector("header p");if(p)p.textContent=t}
 async function start(session){
   uid=session.user.id;
@@ -293,15 +295,22 @@ async function start(session){
     L.f=r.f||{};L.r1=r.r1||[];L.r2=r.r2||[];L.br=r.br||L.br;L.e=data.eval||{};L.sub={report:!!data.submitted_report,eval:!!data.submitted_eval};L.ts=Date.parse(data.updated_at);
     localStorage.setItem(LKEY,JSON.stringify(L));location.reload();return;
   }
-  g.style.display="none";ok=true;sync("클라우드 저장됨 · 본인만 열람");
+  g.style.display="none";ok=true;sync("클라우드 저장됨 · 본인만 열람");lastS=L;
   if(L.ts&&(!data||L.ts>Date.parse(data.updated_at)))push(L);
 }
 function push(S){
   sync("저장 중…");
   SB.from("my_hr").upsert({owner_id:uid,period:PERIOD,report:{f:S.f,r1:S.r1,r2:S.r2,br:S.br},eval:S.e||{},submitted_report:!!(S.sub&&S.sub.report),submitted_eval:!!(S.sub&&S.sub.eval),updated_at:new Date(S.ts).toISOString()},{onConflict:"owner_id,period"})
-   .then(({error})=>{sync(error?"저장 실패 · 권한 확인 필요(기기에는 저장됨)":"클라우드 저장됨 · 본인만 열람")});
+   .then(({error})=>{sync(error?"저장 실패 · 다시 시도하세요(기기에는 저장됨)":"클라우드 저장됨 "+hm()+" · 본인만 열람")});
 }
-window.cloudSave=function(S){if(!ok)return;clearTimeout(timer);timer=setTimeout(()=>push(S),800)};
+window.cloudSave=function(S){lastS=S;if(!ok)return;sync("저장 중…");clearTimeout(timer);timer=setTimeout(()=>push(S),800)};
+document.getElementById("saveNow").onclick=function(){
+  if(!ok){sync("로그인 후 저장할 수 있습니다");return}
+  clearTimeout(timer);
+  let S=lastS;if(!S){try{S=JSON.parse(localStorage.getItem(LKEY)||"{}")}catch(e){S={}}}
+  if(!S||!S.f){sync("저장할 내용이 없습니다");return}
+  S.ts=Date.now();push(S);
+};
 async function login(){
   gm.textContent="";
   const {data,error}=await SB.auth.signInWithPassword({email:document.getElementById("gEmail").value.trim(),password:document.getElementById("gPw").value});
