@@ -528,6 +528,7 @@ function render(){
   app.replaceChildren(
     el('div', {class:'top'}, el('div', {class:'top-inner'}, el('h1', {text: me ? `${me.branch_name} 직원 상담 관리` : '직원 상담 관리'}),
       el('span', {class:'who', text: me ? `${me.display_name || me.manager_name || ''} 지점장`.trim() : ''}),
+      el('a', {class:'btn sm', href:'my-hr.html', text:'내 인사', title:'내 자기신고·자기평가 (별도 페이지, 본인만 열람)', style:'text-decoration:none; display:inline-flex; align-items:center;'}),
       el('button', {class:'btn sm', type:'button', text:'로그아웃', onclick: () => logout()}))),
     el('div', {class:'wrap'},
       el('div', {class:'notice'}, el('b', {text:'이니셜만 입력하세요. '}),

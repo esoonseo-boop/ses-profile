@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>내 인사 · 자기신고</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+:root{--blue:#1B5EFF;--blue-d:#1348c9;--bg:#EEF4FF;--card:#fff;--line:#D9E4FA;--text:#1a2233;--sub:#6b7a99;--warn:#e5484d;--ok:#12a150}
+*{box-sizing:border-box}
+body{margin:0;font-family:Pretendard,-apple-system,sans-serif;background:var(--bg);color:var(--text);padding-bottom:90px}
+header{background:var(--blue);color:#fff;padding:18px 16px 14px;position:sticky;top:0;z-index:5}
+header h1{margin:0;font-size:18px}
+header p{margin:4px 0 0;font-size:12px;opacity:.85}
+.bar{height:6px;background:rgba(255,255,255,.3);border-radius:99px;margin-top:10px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:#fff;transition:width .3s}
+nav{display:flex;gap:6px;overflow-x:auto;padding:12px 12px 4px;scrollbar-width:none}
+nav button{flex:none;border:1px solid var(--line);background:#fff;color:var(--sub);border-radius:99px;padding:8px 14px;font:600 13px Pretendard;cursor:pointer}
+nav button.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+nav button.done::after{content:" ✓";color:var(--ok)}
+nav button.on.done::after{color:#fff}
+main{padding:8px 12px}
+section{display:none}
+section.on{display:block}
+.card{background:var(--card);border-radius:18px;padding:16px;margin:10px 0;box-shadow:0 1px 4px rgba(27,94,255,.08)}
+.card h3{margin:0 0 4px;font-size:15px}
+.hint{font-size:12px;color:var(--sub);margin:0 0 10px;line-height:1.5}
+.opts{display:flex;flex-wrap:wrap;gap:8px}
+.opts label{cursor:pointer}
+.opts input{display:none}
+.opts span{display:inline-block;border:1.5px solid var(--line);border-radius:99px;padding:9px 15px;font-size:14px;background:#fff}
+.opts input:checked+span{background:var(--blue);color:#fff;border-color:var(--blue)}
+.opts.col{flex-direction:column}
+.opts.col span{display:block;border-radius:14px;line-height:1.4}
+textarea,input[type=text],input[type=number],select{width:100%;border:1.5px solid var(--line);border-radius:14px;padding:12px;font:15px Pretendard;color:var(--text);background:#fff}
+textarea{min-height:96px;resize:vertical}
+textarea:focus,input:focus,select:focus{outline:none;border-color:var(--blue)}
+.cnt{display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:12px;color:var(--sub)}
+.cnt b.over{color:var(--warn)}
+.mini{border:1px solid var(--blue);background:#fff;color:var(--blue);border-radius:99px;padding:5px 12px;font:600 12px Pretendard;cursor:pointer}
+.row{display:flex;gap:8px;align-items:center}
+.row input[type=number]{width:110px}
+.region{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.region h4{margin:0 0 6px;font-size:13px;color:var(--blue)}
+.pick{border:1px solid var(--line);border-radius:14px;max-height:230px;overflow:auto;padding:6px 10px;background:#fff}
+.pick label{display:flex;gap:6px;align-items:center;font-size:13px;padding:5px 0}
+.branch{border:1px dashed var(--line);border-radius:14px;padding:12px;margin-bottom:10px}
+.branch b{font-size:13px;color:var(--blue)}
+.branch input{margin:6px 0}
+footer{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);padding:10px 12px;display:flex;gap:8px;z-index:6}
+footer button{flex:1;border:0;border-radius:99px;padding:14px;font:700 15px Pretendard;cursor:pointer}
+.b1{background:#fff;color:var(--blue);border:1.5px solid var(--blue)!important}
+.b2{background:var(--blue);color:#fff}
+.b3{background:#12a150;color:#fff}
+.note{font-size:12px;color:var(--sub);text-align:center;margin:14px 8px}
+.mode{display:flex;gap:8px;padding:12px 12px 0}
+.mode button{flex:1;border:1.5px solid var(--blue);background:#fff;color:var(--blue);border-radius:99px;padding:11px;font:700 14px Pretendard;cursor:pointer}
+.mode button.on{background:var(--blue);color:#fff}
+.sc{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:10px}
+.sc label{cursor:pointer}.sc input{display:none}
+.sc span{display:block;text-align:center;border:1.5px solid var(--line);border-radius:14px;padding:8px 0;font-size:12px;background:#fff;line-height:1.3}
+.sc span b{display:block;font-size:16px;color:var(--blue)}
+.sc input:checked+span{background:var(--blue);color:#fff;border-color:var(--blue)}
+.sc input:checked+span b{color:#fff}
+.tot{display:flex;justify-content:space-between;align-items:center;font-weight:700}
+.tot b{font-size:22px;color:var(--blue)}
+.star{display:grid;gap:8px}
+.star textarea{min-height:60px}
+.star label{font-size:12px;color:var(--sub);font-weight:600}
+.ind{font-size:12.5px;color:var(--sub);line-height:1.55;margin:6px 0 0;padding-left:16px}
+#toast{position:fixed;left:50%;bottom:84px;transform:translateX(-50%);background:#222;color:#fff;padding:10px 18px;border-radius:99px;font-size:13px;opacity:0;transition:.25s;pointer-events:none;z-index:9}
+#toast.show{opacity:.92}
+</style>
+</head>
+<body>
+<header>
+  <h1>자기신고 · 신고서작성(부점장)</h1>
+  <p>HR시스템 입력 전 초안 작성용 · 이 기기에 자동 저장</p>
+  <div class="bar"><i id="bar"></i></div>
+</header>
+<div class="mode"><button id="mRep">자기신고</button><button id="mEval">자기평가</button></div>
+<nav id="nav"></nav>
+<main>
+
+<!-- 1 개인신상 -->
+<section data-s="0">
+  <div class="card"><h3>가. 이동희망</h3>
+    <div class="opts" data-k="move">
+      <label><input type="radio" name="move" value="계속 있고 싶다"><span>계속 있고 싶다</span></label>
+      <label><input type="radio" name="move" value="이동해도 좋다"><span>이동해도 좋다</span></label>
+      <label><input type="radio" name="move" value="필히 이동하고 싶다"><span>필히 이동하고 싶다</span></label>
+    </div>
+    <p class="hint" style="margin-top:12px">사유기재 (미희망 시에는 미희망 사유 기재)</p>
+    <textarea data-k="moveWhy" data-max="0"></textarea>
+    <div class="cnt"><span></span><span><b>0</b>자</span></div>
+  </div>
+  <div class="card"><h3>나. 통근방법</h3>
+    <div class="opts"><label><input type="radio" name="commute" value="대중교통"><span>대중교통</span></label>
+    <label><input type="radio" name="commute" value="자가용"><span>자가용</span></label>
+    <label><input type="radio" name="commute" value="도보·기타"><span>도보·기타</span></label></div>
+  </div>
+  <div class="card"><h3>다. 출퇴근 평균 통근시간</h3>
+    <div class="opts"><label><input type="radio" name="ctime" value="30분이내"><span>30분 이내</span></label>
+    <label><input type="radio" name="ctime" value="1시간이내"><span>1시간 이내</span></label>
+    <label><input type="radio" name="ctime" value="1시간반이내"><span>1시간반 이내</span></label></div>
+  </div>
+  <div class="card"><h3>라. 출퇴근 평균 통근거리</h3>
+    <div class="row"><input type="number" inputmode="numeric" data-k="cdist"><b>Km</b></div>
+  </div>
+  <div class="card"><h3>마. 격지근무 여부</h3>
+    <div class="opts"><label><input type="radio" name="remote" value="해당없음"><span>해당없음</span></label>
+    <label><input type="radio" name="remote" value="해당있음(격지 근무중)"><span>해당있음(격지 근무중)</span></label></div>
+    <h3 style="margin-top:16px">바. 격지근무 기준(유형)</h3>
+    <div class="opts col">
+      <label><input type="radio" name="rtype" value="거리"><span>(거리) 편도 30KM 이상 자차 이용 출퇴근 직원</span></label>
+      <label><input type="radio" name="rtype" value="시간"><span>(시간) 편도 통근시간 80분 이상 소요 직원(대중교통 이용)</span></label>
+      <label><input type="radio" name="rtype" value="거주지"><span>(거주지) 격지 발령에 따라 사택 또는 일시적 전월세로 거주하는 직원 등</span></label>
+      <label><input type="radio" name="rtype" value="기타"><span>(기타) 그 외 격지근무 중인 직원 (추가의견 필수 기재)</span></label>
+    </div>
+  </div>
+  <div class="card"><h3>격지 근무 관련 추가의견</h3>
+    <p class="hint">항목 중 「기타」 선택 시 필수 기재</p>
+    <label class="opts" style="margin-bottom:8px"><input type="checkbox" data-k="noExtra"><span>추가의견 없음</span></label>
+    <textarea data-k="remoteExtra" data-max="0"></textarea>
+    <div class="cnt"><span></span><span><b>0</b>자</span></div>
+  </div>
+</section>
+
+<!-- 2 점주현황 및 지점정보 -->
+<section data-s="1">
+  <p class="hint" style="padding:0 6px">※ 인사운용 시 중요자료로 활용되므로 구체적으로 기재</p>
+  <div class="card"><h3>점주환경</h3><p class="hint">입주위치, 지역특성(산업), 지역 발전계획, 유동인구, 금융기관간 경쟁, 기타 점포관련 특이사항 등</p>
+    <textarea data-k="env" data-max="0"></textarea><div class="cnt"><span></span><span><b>0</b>자</span></div></div>
+  <div class="card"><h3>거래고객유형</h3><p class="hint">주 고객 비중(개인/기업), 규모, 업종, 연령층, 내점 빈도, 주요 요청사항, 기타 거래고객 특성 등</p>
+    <textarea data-k="custType" data-max="0"></textarea><div class="cnt"><span></span><span><b>0</b>자</span></div></div>
+  <div class="card"><h3>성장성</h3><p class="hint">점유율, 안정성, 성장여력(규모/이익), 신규고객 유입 및 특성 등</p>
+    <textarea data-k="growth" data-max="0"></textarea><div class="cnt"><span></span><span><b>0</b>자</span></div></div>
+  <div class="card"><h3>기타</h3>
+    <textarea data-k="branchEtc" data-max="0"></textarea><div class="cnt"><span></span><span><b>0</b>자</span></div></div>
+</section>
+
+<!-- 3 희망근무지역 -->
+<section data-s="2">
+  <div class="card"><h3>가. 희망근무지역(국내)</h3>
+    <p class="hint">화면 일부만 확인된 목록입니다. 빠진 지역은 아래 직접입력에 적으세요.</p>
+    <div class="region">
+      <div><h4>1지망</h4><div class="pick" id="p1"></div></div>
+      <div><h4>2지망</h4><div class="pick" id="p2"></div></div>
+    </div>
+    <input type="text" data-k="regionEtc" placeholder="직접입력 (누락 지역)" style="margin-top:10px">
+  </div>
+  <div class="card"><h3>나. 희망근무 부점(국내)</h3>
+    <p class="hint">※ 3개 필수선택 / 사유를 구체적으로 기재 · 한글 150자 이내</p>
+    <div id="branches"></div>
+  </div>
+</section>
+
+<!-- 4 인사운용 의견 -->
+<section data-s="3">
+  <div class="card"><h3>인사운용에 대한 의견</h3><p class="hint">한글 150자 이내</p>
+    <textarea data-k="opinion" data-max="150"></textarea><div class="cnt"><span></span><span><b>0</b> / 150자</span></div></div>
+</section>
+
+<!-- 5 개인 애로사항 -->
+<section data-s="4">
+  <div class="card"><h3>개인 애로사항</h3><p class="hint">화면 미확인 · 글자수 제한 확인 후 한도 지정 가능</p>
+    <textarea data-k="hardship" data-max="0"></textarea><div class="cnt"><span></span><span><b>0</b>자</span></div></div>
+</section>
+
+<!-- 6 기타 -->
+<section data-s="5">
+  <div class="card"><h3>기타</h3><p class="hint">화면 미확인</p>
+    <textarea data-k="etc" data-max="0"></textarea><div class="cnt"><span></span><span><b>0</b>자</span></div></div>
+  <div class="card"><h3>전체 요약 (확인용)</h3>
+    <pre id="sum" style="white-space:pre-wrap;font:13px/1.6 Pretendard;margin:0"></pre></div>
+</section>
+
+<!-- 자기평가 -->
+<div id="evalSec" style="display:none">
+  <div class="card"><h3>평가지표 자기평가</h3>
+    <p class="hint">점수 선택 → 합계 자동 계산 (화면의 행 이름 일부가 잘려 보여 임시 이름 사용)</p></div>
+
+  <div class="card"><h3>평가기간 내 업적</h3>
+    <p class="ind" style="padding:0">경영실적평가에 의한 「그룹내」 순위 반영 — 자기평가 선택 없음</p></div>
+
+  <div class="card"><h3>영업·마케팅 <span style="font-weight:400;font-size:12px;color:var(--sub)">(이름 미확인)</span></h3>
+    <ul class="ind"><li>부점의 이익창출과 고객만족을 위해 점주환경에 부합하는 영업전략 및 실천 방안을 수립하고 스스로 실천하며 직원들에게 효과적으로 전파하고 독려함</li>
+    <li>고객의 니즈에 맞는 상품과 서비스를 제공하는 등 적극적이고 효율적인 마케팅 활동을 전개함</li></ul>
+    <div class="sc" data-g="s1" data-p="15,13,11,9,7"></div></div>
+
+  <div class="card"><h3>리더십</h3>
+    <ul class="ind"><li>부점의 경영성과 달성을 위해 열정적으로 업무를 추진하며 부하직원들의 신뢰와 자율적 참여 등 역량을 결집하여 성과를 극대화 함</li>
+    <li>부하직원에게 도전적인 목표를 부여하고 공정하게 평가하며 직원의 역량강화를 위해 동기부여 등 지속적인 관심을 가짐</li></ul>
+    <div class="sc" data-g="s2" data-p="10,8,6,4,2"></div></div>
+
+  <div class="card"><h3>인성·소통·혁신 <span style="font-weight:400;font-size:12px;color:var(--sub)">(이름 미확인)</span></h3>
+    <ul class="ind"><li>고객명록과 감동을 위한 불합리한 관행과 절차를 개선하도록 적극 장려하여 중소 실천함</li>
+    <li>본인은 물론 부하직원들에게 기본에 충실하고 정직하게 행동하도록 격려하며, 은행과 고객, 지역 및 사회로부터 높은 도덕적, 인격적 존경과 신뢰를 받고 있음</li>
+    <li>부하 직원들이 새롭고 창조적으로 사고하고 행동할 수 있도록 장려하고 촉진 하는 분위기를 조성함</li>
+    <li>부하직원들과 은행 및 부점 목표, 전략방향 등을 공유하고 부하직원들이 자신의 업무는 물론 다른 직원들의 업무도 자산의 일처럼 서로 협력할 수 있도록 여건을 마련함</li></ul>
+    <div class="sc" data-g="s3" data-p="25,23,21,19,17"></div></div>
+
+  <div class="card"><div class="tot"><span>합계 (업적 제외)</span><span><b id="evTot">0</b> / 50</span></div></div>
+
+  <div class="card"><h3>평정대상자 (자기평가)</h3>
+    <p class="hint">당해 반기 본인의 업무추진내용, 실적, 성과, 수익, 자기개발 노력 등을 구체적으로 기술 · 영업점 예시: ○○업체 유치, 예금 ○○백만원 유치, 외환 ○○만불 유치 · 한글 2000자 내</p>
+    <textarea data-e="evSelf" data-ev="1" style="min-height:220px"></textarea>
+    <div class="cnt"><span class="evc"></span><span></span></div></div>
+
+  <div class="card"><h3>평정대상자 (우수사례)</h3>
+    <p class="hint">필요시 기재 · 한글 2000자 내<br>① 본인의 업무추진내용(특히 성과에 기여한 사례 포함) 중 구체적인 우수사례(연체관리, 이탈방지 등) ② 주변 직원들과 협업을 통해 이루어낸 성과 중 우수사례(타부서 공조, 협업사례 등) ③ 위기상황(금융사고, 재해 등)에 적절히 대응한 우수사례(금융사기피해예방 활동 등)</p>
+    <div class="star">
+      <label>상황(Situation): 업무 추진배경 및 진행경과 등</label><textarea data-e="stS"></textarea>
+      <label>과제(Task): 담당한 업무의 내용, 이슈 등 (업무의 난이도나 중요성 설명)</label><textarea data-e="stT"></textarea>
+      <label>실행(Action): 구체적인 업무추진 과정 등 (과정상 특이사항, 문제해결을 위해 노력한 정도)</label><textarea data-e="stA"></textarea>
+      <label>결과(Result): 업무수행에 따른 성과, 효과 등</label><textarea data-e="stR"></textarea>
+      <button class="mini" id="starMerge" style="justify-self:start">STAR → 우수사례에 반영</button>
+    </div>
+    <textarea data-e="evCase" data-ev="1" style="min-height:200px;margin-top:12px"></textarea>
+    <div class="cnt"><span class="evc"></span><span></span></div></div>
+</div>
+
+<p class="note">개인정보 보호: 본인 계정으로만 저장·열람됩니다. 주소·주민번호는 입력하지 마세요.<br><a href="#" onclick="myhrLogout();return false" style="color:var(--blue)">로그아웃</a></p>
+</main>
+
+<footer>
+  <button class="b1" id="prev">이전</button>
+  <button class="b2" id="next">다음</button>
+  <button class="b3" id="copyAll">전체 복사</button>
+</footer>
+<div id="toast"></div>
+
+<div id="gate" style="position:fixed;inset:0;background:var(--bg);z-index:50;display:flex;align-items:center;justify-content:center;padding:20px">
+  <div class="card" style="width:100%;max-width:360px;margin:0">
+    <h3 style="font-size:18px">내 인사 · 로그인</h3>
+    <p class="hint">CRM과 같은 계정으로 로그인하세요. 지점장 권한만 열립니다.</p>
+    <input type="text" id="gEmail" placeholder="이메일" autocomplete="username" style="margin-bottom:8px">
+    <input type="password" id="gPw" placeholder="비밀번호" autocomplete="current-password" style="width:100%;border:1.5px solid var(--line);border-radius:14px;padding:12px;font:15px Pretendard">
+    <p id="gmsg" style="color:var(--warn);font-size:13px;min-height:18px;margin:8px 0"></p>
+    <button id="gBtn" class="b2" style="width:100%;border:0;border-radius:99px;padding:14px;font:700 15px Pretendard;cursor:pointer">로그인</button>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+(function(){
+const SB=supabase.createClient("https://oqeiaaworcarixndtomj.supabase.co","sb_publishable_xVY0MJETNgpC820jW4yO1w_XUd9QzqZ");
+const LKEY="myhr_selfreport_v1",PERIOD="2026-하반기";
+const g=document.getElementById("gate"),gm=document.getElementById("gmsg");
+let uid=null,ok=false,timer=null;
+function sync(t){const p=document.querySelector("header p");if(p)p.textContent=t}
+async function start(session){
+  uid=session.user.id;
+  const {data}=await SB.from("my_hr").select("report,eval,updated_at").eq("period",PERIOD).maybeSingle();
+  let L={};try{L=JSON.parse(localStorage.getItem(LKEY)||"{}")}catch(e){}
+  if(data&&Date.parse(data.updated_at)>(L.ts||0)){
+    const r=data.report||{};
+    L.f=r.f||{};L.r1=r.r1||[];L.r2=r.r2||[];L.br=r.br||L.br;L.e=data.eval||{};L.ts=Date.parse(data.updated_at);
+    localStorage.setItem(LKEY,JSON.stringify(L));location.reload();return;
+  }
+  g.style.display="none";ok=true;sync("클라우드 저장됨 · 본인만 열람");
+  if(L.ts&&(!data||L.ts>Date.parse(data.updated_at)))push(L);
+}
+function push(S){
+  sync("저장 중…");
+  SB.from("my_hr").upsert({owner_id:uid,period:PERIOD,report:{f:S.f,r1:S.r1,r2:S.r2,br:S.br},eval:S.e||{},updated_at:new Date(S.ts).toISOString()},{onConflict:"owner_id,period"})
+   .then(({error})=>{sync(error?"저장 실패 · 권한 확인 필요(기기에는 저장됨)":"클라우드 저장됨 · 본인만 열람")});
+}
+window.cloudSave=function(S){if(!ok)return;clearTimeout(timer);timer=setTimeout(()=>push(S),800)};
+async function login(){
+  gm.textContent="";
+  const {data,error}=await SB.auth.signInWithPassword({email:document.getElementById("gEmail").value.trim(),password:document.getElementById("gPw").value});
+  if(error){gm.textContent="로그인 실패: 이메일/비밀번호 확인";return}
+  start(data.session);
+}
+document.getElementById("gBtn").onclick=login;
+document.getElementById("gPw").onkeydown=e=>{if(e.key==="Enter")login()};
+window.myhrLogout=async()=>{await SB.auth.signOut();location.reload()};
+SB.auth.getSession().then(({data})=>{if(data.session)start(data.session)});
+})();
+</script>
+
+<script>
+const STEPS=["1 개인신상","2 점주현황·지점정보","3 희망근무지역","4 인사운용 의견","5 개인 애로사항","6 기타"];
+const REGIONS=["본부부서","서울시내(강남)","서울시내(강동)","서울시내(강북)","서울시내(남부)","서울시내(남중)","서울시내(서부)","서울시내(중부)","인천시내(인천동부)","경기지역(강동)","경기지역(강북)","경기지역(남부)","경기지역(서부)","경기지역(인천동부)","경기지역(경기남부)","경기지역(경수)","강원지역(경동·강원)","부산시내(부산)","부산시내(부산·울산)","대구시내(대구·경북동부)","대구시내(대구·경북서부)","경북지역(대구·경북동부)","경남지역(경남)","전남지역(호남)","전북지역(호남)","충북지역(충북)","충남지역(충남)"];
+const KEY="myhr_selfreport_v1";
+let S={};
+try{S=JSON.parse(localStorage.getItem(KEY)||"{}")}catch(e){S={}}
+if(!S.f)S.f={};
+if(!S.r1)S.r1=[]; if(!S.r2)S.r2=[];
+if(!S.br)S.br=[{n:"",w:""},{n:"",w:""},{n:"",w:""}];
+if(S.step==null)S.step=0;
+const $=(q,e=document)=>e.querySelector(q), $$=(q,e=document)=>[...e.querySelectorAll(q)];
+const save=()=>{S.ts=Date.now();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}if(window.cloudSave)window.cloudSave(S)};
+function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1400)}
+
+// nav
+const nav=$("#nav");
+STEPS.forEach((s,i)=>{const b=document.createElement("button");b.textContent=s;b.onclick=()=>go(i);nav.appendChild(b)});
+
+// regions
+["p1","p2"].forEach((id,n)=>{
+  const k=n?"r2":"r1";
+  $("#"+id).innerHTML=REGIONS.map(r=>`<label><input type="checkbox" value="${r}" ${S[k].includes(r)?"checked":""}> ${r}</label>`).join("");
+  $("#"+id).onchange=e=>{S[k]=$$("input:checked",$("#"+id)).map(x=>x.value);save();refresh()};
+});
+
+// branches
+function drawBranches(){
+  $("#branches").innerHTML=S.br.map((b,i)=>`<div class="branch"><b>희망 부점 ${i+1}</b>
+  <input type="text" data-bi="${i}" data-bf="n" placeholder="부점명" value="${b.n||""}">
+  <textarea data-bi="${i}" data-bf="w" style="min-height:70px" placeholder="희망사유 및 운영계획 (150자 이내)">${b.w||""}</textarea>
+  <div class="cnt"><span></span><span><b>${(b.w||"").length}</b> / 150자</span></div></div>`).join("");
+}
+drawBranches();
+$("#branches").oninput=e=>{
+  const t=e.target,i=+t.dataset.bi,f=t.dataset.bf;if(f==null)return;
+  S.br[i][f]=t.value;save();
+  if(f==="w"){const c=t.parentNode.querySelector(".cnt b");c.textContent=t.value.length;c.classList.toggle("over",t.value.length>150)}
+  refresh();
+};
+
+// generic fields
+$$("[data-k]").forEach(el=>{
+  const k=el.dataset.k;
+  if(el.type==="checkbox"){el.checked=!!S.f[k];el.onchange=()=>{S.f[k]=el.checked;save();refresh()}}
+  else if(el.tagName==="TEXTAREA"||el.type==="text"||el.type==="number"){
+    el.value=S.f[k]||"";
+    el.oninput=()=>{S.f[k]=el.value;save();count(el);refresh()};
+    count(el);
+    if(el.tagName==="TEXTAREA"){
+      const c=el.nextElementSibling.firstElementChild;
+      const b=document.createElement("button");b.className="mini";b.textContent="복사";
+      b.onclick=()=>copy(el.value);c.appendChild(b);
+    }
+  }
+});
+function count(el){
+  if(el.tagName!=="TEXTAREA")return;
+  const max=+el.dataset.max||0,n=el.value.length,b=el.nextElementSibling.querySelector("b");
+  b.textContent=max?n+" / "+max:n; b.nextSibling&&0;
+  b.classList.toggle("over",max&&n>max);
+}
+// radios
+["move","commute","ctime","remote","rtype"].forEach(n=>{
+  $$(`input[name=${n}]`).forEach(r=>{r.checked=S.f[n]===r.value;r.onchange=()=>{S.f[n]=r.value;save();refresh()}});
+});
+
+function copy(t){
+  if(!t){toast("내용이 없습니다");return}
+  (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast("복사됨")).catch(()=>{
+    const a=document.createElement("textarea");a.value=t;document.body.appendChild(a);a.select();document.execCommand("copy");a.remove();toast("복사됨")});
+}
+function summary(){
+  const f=S.f,L=[];
+  L.push("[1 개인신상]","이동희망: "+(f.move||"-"),"사유: "+(f.moveWhy||"-"),"통근방법: "+(f.commute||"-"),"통근시간: "+(f.ctime||"-"),"통근거리: "+(f.cdist?f.cdist+"Km":"-"),"격지근무: "+(f.remote||"-"),"격지유형: "+(f.rtype||"-"),"격지 추가의견: "+(f.noExtra?"추가의견 없음":(f.remoteExtra||"-")));
+  L.push("","[2 점주현황·지점정보]","점주환경: "+(f.env||"-"),"거래고객유형: "+(f.custType||"-"),"성장성: "+(f.growth||"-"),"기타: "+(f.branchEtc||"-"));
+  L.push("","[3 희망근무지역]","1지망: "+(S.r1.join(", ")||"-"),"2지망: "+(S.r2.join(", ")||"-"),"직접입력: "+(f.regionEtc||"-"));
+  S.br.forEach((b,i)=>L.push(`희망부점${i+1}: ${b.n||"-"} / ${b.w||"-"}`));
+  L.push("","[4 인사운용 의견]",f.opinion||"-","","[5 개인 애로사항]",f.hardship||"-","","[6 기타]",f.etc||"-");
+  return L.join("\n");
+}
+function doneFlags(){
+  const f=S.f;
+  return [
+    !!(f.move&&f.commute&&f.ctime&&f.cdist&&f.remote&&(f.remote==="해당없음"||f.rtype)&&(f.rtype!=="기타"||f.remoteExtra)),
+    !!(f.env&&f.custType&&f.growth),
+    S.br.every(b=>b.n&&b.w&&b.w.length<=150)&&S.r1.length>0,
+    !!(f.opinion&&f.opinion.length<=150),
+    !!f.hardship, !!f.etc];
+}
+/* ===== 자기평가 ===== */
+if(!S.e)S.e={};
+if(!S.mode)S.mode="rep";
+const LV=["탁월","우수","보통","미흡","부족"];
+$$(".sc").forEach(box=>{
+  const g=box.dataset.g,p=box.dataset.p.split(",").map(Number);
+  box.innerHTML=p.map((v,i)=>`<label><input type="radio" name="${g}" value="${v}" ${S.e[g]===v?"checked":""}><span>${LV[i]}<b>${v}</b></span></label>`).join("");
+  box.onchange=e=>{S.e[g]=+e.target.value;save();evRefresh()};
+});
+const bytes=s=>[...s].reduce((n,c)=>n+(c.charCodeAt(0)>127?2:1),0);
+const EV_MAX=2000,EV_BYTE=3980;
+$$("[data-e]").forEach(el=>{
+  const k=el.dataset.e;
+  el.value=S.e[k]||"";
+  el.oninput=()=>{S.e[k]=el.value;save();evRefresh()};
+  if(el.dataset.ev){
+    const c=el.nextElementSibling.lastElementChild;
+    const b=document.createElement("button");b.className="mini";b.textContent="복사";b.onclick=()=>copy(el.value);c.appendChild(b);
+  }
+});
+$("#starMerge").onclick=()=>{
+  const e=S.e,parts=[["상황",e.stS],["과제",e.stT],["실행",e.stA],["결과",e.stR]].filter(x=>x[1]&&x[1].trim());
+  if(!parts.length){toast("STAR 내용을 먼저 입력하세요");return}
+  const t=parts.map(x=>`${x[0]}: ${x[1].trim()}`).join("\n");
+  S.e.evCase=(S.e.evCase?S.e.evCase.trim()+"\n\n":"")+t;
+  $("[data-e=evCase]").value=S.e.evCase;save();evRefresh();toast("반영됨");
+};
+function evRefresh(){
+  const t=(S.e.s1||0)+(S.e.s2||0)+(S.e.s3||0);
+  $("#evTot").textContent=t;
+  $$("[data-ev]").forEach(el=>{
+    const n=el.value.length,by=bytes(el.value),over=n>EV_MAX||by>EV_BYTE;
+    const c=el.nextElementSibling.firstElementChild;
+    c.innerHTML=`<b class="${over?"over":""}">${n} / ${EV_MAX}자</b> · ${by} / ${EV_BYTE}바이트`;
+  });
+}
+function evSummary(){
+  const e=S.e;
+  return ["[자기평가 지표]",`영업·마케팅: ${e.s1??"-"}점`,`리더십: ${e.s2??"-"}점`,`인성·소통·혁신: ${e.s3??"-"}점`,`합계: ${(e.s1||0)+(e.s2||0)+(e.s3||0)}점`,"","[평정대상자 자기평가]",e.evSelf||"-","","[우수사례]",e.evCase||"-"].join("\n");
+}
+
+function refresh(){
+  const ev=S.mode==="eval";
+  $("#mRep").classList.toggle("on",!ev);$("#mEval").classList.toggle("on",ev);
+  $("#nav").style.display=ev?"none":"flex";
+  $("#evalSec").style.display=ev?"block":"none";
+  const d=doneFlags();
+  $$("nav button").forEach((b,i)=>{b.classList.toggle("on",i===S.step);b.classList.toggle("done",d[i])});
+  $$("section").forEach(s=>s.classList.toggle("on",!ev&&+s.dataset.s===S.step));
+  const evDone=[S.e.s1,S.e.s2,S.e.s3].filter(x=>x!=null).length+(S.e.evSelf&&S.e.evSelf.length<=EV_MAX?1:0);
+  $("#bar").style.width=(ev?evDone/4:d.filter(Boolean).length/6)*100+"%";
+  $("#sum").textContent=summary();
+  $("#prev").style.display=ev?"none":"";$("#next").style.display=ev?"none":"";
+  $("#prev").style.visibility=S.step?"visible":"hidden";
+  $("#next").style.visibility=S.step<5?"visible":"hidden";
+  evRefresh();
+}
+function go(i){S.step=i;save();refresh();scrollTo({top:0,behavior:"smooth"})}
+function setMode(m){S.mode=m;save();refresh();scrollTo({top:0})}
+$("#mRep").onclick=()=>setMode("rep");
+$("#mEval").onclick=()=>setMode("eval");
+$("#prev").onclick=()=>go(S.step-1);
+$("#next").onclick=()=>go(S.step+1);
+$("#copyAll").onclick=()=>copy(S.mode==="eval"?evSummary():summary());
+refresh();
+</script>
+</body>
+</html>
