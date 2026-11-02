@@ -98,6 +98,17 @@ details#subCard .opts{margin:10px 0 8px}
 details.star{margin-top:10px}
 details.star summary{cursor:pointer;color:var(--blue);font-weight:600;font-size:13px}
 #sum{overflow-wrap:anywhere}
+.mode button{font-size:13px;padding:9px 4px}
+.pmc{border:1.5px solid var(--line);border-radius:14px;padding:12px;margin:0 0 8px;cursor:pointer;background:#fff}
+.pmc b{font-size:14px}
+.pmc small{display:block;color:var(--sub);font-size:12px;margin-top:3px}
+.pmc.sub{border-color:var(--ok)}
+.pmb{display:inline-block;border-radius:99px;padding:2px 9px;font-size:11px;font-weight:700;background:#eef2fb;color:var(--sub);margin-left:6px}
+.pmb.ok{background:#e3f6ea;color:var(--ok)}
+.pmf{display:grid;gap:6px;margin-bottom:10px}
+.pmf label{font-size:12px;color:var(--sub);font-weight:600}
+.pmact{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.mini.red{border-color:var(--warn);color:var(--warn)}
 </style>
 </head>
 <body>
@@ -107,11 +118,11 @@ details.star summary{cursor:pointer;color:var(--blue);font-weight:600;font-size:
   <div style="display:flex;gap:8px;align-items:center;margin-top:10px">
     <select id="period" style="width:auto;padding:6px 10px;border-radius:99px;font:700 13px Pretendard;border:0;color:#1B5EFF"></select>
     <span id="cycle" style="font-size:12px;opacity:.9"></span>
-    <button id="saveNow" type="button" style="margin-left:auto;border:0;border-radius:99px;padding:7px 14px;font:700 13px Pretendard;background:#fff;color:#1B5EFF;cursor:pointer">지금 저장</button>
+    <button id="saveNow" type="button" style="margin-left:auto;white-space:nowrap;flex:none;border:0;border-radius:99px;padding:7px 14px;font:700 13px Pretendard;background:#fff;color:#1B5EFF;cursor:pointer">지금 저장</button>
   </div>
   <div class="bar"><i id="bar"></i></div>
 </header>
-<div class="mode"><button id="mRep">자기신고</button><button id="mEval">자기평가</button></div>
+<div class="mode"><button id="mRep">자기신고</button><button id="mEval">자기평가</button><button id="mPromo">승진추천서</button></div>
 <nav id="nav"></nav>
 <main>
 <details id="subCard">
@@ -255,6 +266,26 @@ details.star summary{cursor:pointer;color:var(--blue);font-weight:600;font-size:
     <div class="cnt"><span class="evc"></span><span></span></div></div>
 </div>
 
+<div id="promoSec" style="display:none">
+  <div id="pmListBox" class="card"><h3>승진추천서 관리 <span id="pmPeriod" style="font-weight:400;font-size:12px;color:var(--blue)"></span></h3>
+    <p class="hint">반기별로 본인·직원 승진추천서를 작성하고 보관합니다. 직원은 이름 대신 이니셜만 쓰세요.</p>
+    <div id="pmList"></div>
+    <button class="mini" id="pmAdd" type="button">+ 추천서 추가</button></div>
+  <div id="pmEd" style="display:none">
+    <div class="card"><h3>추천서 작성</h3>
+      <div class="pmf"><label>구분</label><select id="pmKind"><option value="self">본인</option><option value="staff">직원</option></select></div>
+      <div class="pmf"><label>대상 (직원은 이니셜과 직급, 예: ㅈㅁㅇ 대리)</label><input type="text" id="pmLabel"></div>
+      <div class="pmf"><label>추천 직급 (예: 4급)</label><input type="text" id="pmRank"></div></div>
+    <div class="card"><h3>상세내용</h3><textarea data-pm="detail" style="min-height:200px"></textarea><div class="cnt"><span></span><span></span></div></div>
+    <div class="card"><h3>성과</h3><textarea data-pm="perf" style="min-height:100px"></textarea><div class="cnt"><span></span><span></span></div></div>
+    <div class="card"><h3>역량</h3><textarea data-pm="ability" style="min-height:100px"></textarea><div class="cnt"><span></span><span></span></div></div>
+    <div class="card"><h3>추천자 의견</h3><textarea data-pm="opinion" style="min-height:140px"></textarea><div class="cnt"><span></span><span></span></div></div>
+    <div class="card"><div class="opts"><label><input type="checkbox" id="pmDone"><span>제출 완료</span></label></div>
+      <p class="hint" id="pmSt" style="margin:8px 0 0"></p>
+      <div class="pmact"><button class="mini" id="pmBack" type="button">목록으로</button><button class="mini" id="pmCopy" type="button">전체 복사</button><button class="mini red" id="pmDel" type="button">삭제</button></div></div>
+  </div>
+</div>
+
 <p class="note">개인정보 보호: 본인 계정으로만 저장·열람됩니다. 주소·주민번호는 입력하지 마세요.<br><a href="#" onclick="myhrLogout();return false" style="color:var(--blue)">로그아웃</a></p>
 </main>
 
@@ -295,7 +326,7 @@ async function start(session){
     L.f=r.f||{};L.r1=r.r1||[];L.r2=r.r2||[];L.br=r.br||L.br;L.e=data.eval||{};L.sub={report:!!data.submitted_report,eval:!!data.submitted_eval};L.ts=Date.parse(data.updated_at);
     localStorage.setItem(LKEY,JSON.stringify(L));location.reload();return;
   }
-  g.style.display="none";ok=true;sync("클라우드 저장됨 · 본인만 열람");lastS=L;
+  g.style.display="none";ok=true;window.myhrSB=SB;sync("클라우드 저장됨 · 본인만 열람");lastS=L;if(window.promoInit)window.promoInit();
   if(L.ts&&(!data||L.ts>Date.parse(data.updated_at)))push(L);
 }
 function push(S){
@@ -306,6 +337,7 @@ function push(S){
 window.cloudSave=function(S){lastS=S;if(!ok)return;sync("저장 중…");clearTimeout(timer);timer=setTimeout(()=>push(S),800)};
 document.getElementById("saveNow").onclick=function(){
   if(!ok){sync("로그인 후 저장할 수 있습니다");return}
+  if(window.getMode&&window.getMode()==="promo"){if(window.pmFlush)window.pmFlush();return}
   clearTimeout(timer);
   let S=lastS;if(!S){try{S=JSON.parse(localStorage.getItem(LKEY)||"{}")}catch(e){S={}}}
   if(!S||!S.f){sync("저장할 내용이 없습니다");return}
@@ -477,17 +509,20 @@ function evSummary(){
 }
 
 function refresh(){
-  const ev=S.mode==="eval";
-  $("#mRep").classList.toggle("on",!ev);$("#mEval").classList.toggle("on",ev);
-  $("#nav").style.display=ev?"none":"flex";
+  const ev=S.mode==="eval",pm=S.mode==="promo";
+  $("#mRep").classList.toggle("on",!ev&&!pm);$("#mEval").classList.toggle("on",ev);$("#mPromo").classList.toggle("on",pm);
+  $("#nav").style.display=(ev||pm)?"none":"flex";
   $("#evalSec").style.display=ev?"block":"none";
+  $("#promoSec").style.display=pm?"block":"none";
+  $("#subCard").style.display=pm?"none":"";
+  if(pm&&!PM.loaded)pmLoad();
   const d=doneFlags();
   $$("nav button").forEach((b,i)=>{b.classList.toggle("on",i===S.step);b.classList.toggle("done",d[i])});
-  $$("section").forEach(s=>s.classList.toggle("on",!ev&&+s.dataset.s===S.step));
+  $$("section").forEach(s=>s.classList.toggle("on",!ev&&!pm&&+s.dataset.s===S.step));
   const evDone=[S.e.s1,S.e.s2,S.e.s3].filter(x=>x!=null).length+(S.e.evSelf&&S.e.evSelf.length<=EV_MAX?1:0);
-  $("#bar").style.width=(ev?evDone/4:d.filter(Boolean).length/6)*100+"%";
+  $("#bar").style.width=(pm?(PM.rows.length?PM.rows.filter(x=>x.status==="제출완료").length/PM.rows.length:0):ev?evDone/4:d.filter(Boolean).length/6)*100+"%";
   $("#sum").textContent=summary();
-  $("#prev").style.display=ev?"none":"";$("#next").style.display=ev?"none":"";
+  $("#prev").style.display=(ev||pm)?"none":"";$("#next").style.display=(ev||pm)?"none":"";
   $("#prev").style.visibility=S.step?"visible":"hidden";
   $("#next").style.visibility=S.step<5?"visible":"hidden";
   evRefresh();
@@ -496,13 +531,88 @@ function go(i){S.step=i;save();refresh();scrollTo({top:0,behavior:"smooth"})}
 function setMode(m){S.mode=m;save();refresh();scrollTo({top:0})}
 $("#mRep").onclick=()=>setMode("rep");
 $("#mEval").onclick=()=>setMode("eval");
+$("#mPromo").onclick=()=>setMode("promo");
 $("#prev").onclick=()=>go(S.step-1);
 $("#next").onclick=()=>go(S.step+1);
-$("#copyAll").onclick=()=>copy(S.mode==="eval"?evSummary():summary());
+$("#copyAll").onclick=()=>copy(S.mode==="promo"?pmText():S.mode==="eval"?evSummary():summary());
 $("#subRep").checked=!!S.sub.report;$("#subEval").checked=!!S.sub.eval;
 $("#subRep").onchange=e=>{S.sub.report=e.target.checked;save();toast(e.target.checked?"자기신고 제출완료 표시":"해제")};
 $("#subEval").onchange=e=>{S.sub.eval=e.target.checked;save();toast(e.target.checked?"자기평가 제출완료 표시":"해제")};
 $("#copyPrev").onclick=()=>{if(window.copyPrev)window.copyPrev();else toast("로그인 후 사용할 수 있습니다")};
+/* ===== 승진추천서 ===== */
+const PM={rows:[],cur:null,timer:null,loaded:false};
+const PMF=["detail","perf","ability","opinion"];
+window.getMode=()=>S.mode;
+const esc=t=>String(t==null?"":t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const pmRow=()=>PM.rows.find(r=>r.id===PM.cur);
+window.promoInit=function(){PM.loaded=false;if(S.mode==="promo")pmLoad()};
+async function pmLoad(){
+  const SB=window.myhrSB;if(!SB)return;
+  $("#pmPeriod").textContent="· "+PERIOD.replace("-"," ");
+  const {data,error}=await SB.from("my_promo_recs").select("*").eq("period",PERIOD).order("created_at");
+  if(error){$("#pmList").innerHTML='<p class="hint">불러오기에 실패했습니다. 로그인 상태를 확인하세요.</p>';return}
+  PM.rows=data||[];PM.loaded=true;pmDraw();
+}
+function pmTotal(r){return PMF.reduce((n,k)=>n+(r[k]||"").length,0)}
+function pmDraw(){
+  const box=$("#pmList");
+  box.innerHTML=PM.rows.length?PM.rows.map(r=>`<div class="pmc${r.status==="제출완료"?" sub":""}" data-id="${r.id}"><b>${esc(r.target_label)||"(대상 미입력)"}</b><span class="pmb${r.status==="제출완료"?" ok":""}">${esc(r.status)}</span><small>${r.target_kind==="self"?"본인":"직원"}${r.rank_to?" · 추천 "+esc(r.rank_to):""} · ${pmTotal(r)}자</small></div>`).join(""):'<p class="hint">이 반기에 작성한 추천서가 없습니다.</p>';
+  $$(".pmc",box).forEach(c=>c.onclick=()=>pmOpen(c.dataset.id));
+  $("#pmListBox").style.display=PM.cur?"none":"";
+  $("#pmEd").style.display=PM.cur?"block":"none";
+  const w=PM.rows.length?PM.rows.filter(x=>x.status==="제출완료").length/PM.rows.length:0;
+  if(S.mode==="promo")$("#bar").style.width=w*100+"%";
+}
+function pmOpen(id){
+  PM.cur=id;const r=pmRow();if(!r)return;
+  $("#pmKind").value=r.target_kind;$("#pmLabel").value=r.target_label||"";$("#pmRank").value=r.rank_to||"";
+  $$("[data-pm]").forEach(el=>el.value=r[el.dataset.pm]||"");
+  $("#pmDone").checked=r.status==="제출완료";$("#pmSt").textContent="";
+  pmCount();pmDraw();requestAnimationFrame(fitAll);setTimeout(fitAll,250);scrollTo({top:0});
+}
+function pmCount(){
+  $$("[data-pm]").forEach(el=>{const n=el.value.length,by=bytes(el.value);el.nextElementSibling.firstElementChild.innerHTML=`<b>${n}자</b> · ${by}바이트`});
+}
+function pmCollect(){
+  const r=pmRow();if(!r)return;
+  r.target_kind=$("#pmKind").value;r.target_label=$("#pmLabel").value;r.rank_to=$("#pmRank").value;
+  $$("[data-pm]").forEach(el=>r[el.dataset.pm]=el.value);
+  r.status=$("#pmDone").checked?"제출완료":"작성중";
+}
+function pmQueue(){
+  pmCollect();pmCount();$("#pmSt").textContent="저장 중…";
+  clearTimeout(PM.timer);PM.timer=setTimeout(pmFlush,800);
+}
+window.pmFlush=async function(){
+  clearTimeout(PM.timer);const r=pmRow(),SB=window.myhrSB;if(!r||!SB)return;
+  pmCollect();
+  const {error}=await SB.from("my_promo_recs").update({target_kind:r.target_kind,target_label:r.target_label,rank_to:r.rank_to,detail:r.detail,perf:r.perf,ability:r.ability,opinion:r.opinion,status:r.status,updated_at:new Date().toISOString()}).eq("id",r.id);
+  const d=new Date(),t=String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
+  $("#pmSt").textContent=error?"저장 실패 · 다시 시도하세요":"저장됨 "+t;
+};
+["pmKind","pmLabel","pmRank","pmDone"].forEach(id=>{$("#"+id).oninput=pmQueue;$("#"+id).onchange=pmQueue});
+$$("[data-pm]").forEach(el=>el.addEventListener("input",pmQueue));
+$("#pmBack").onclick=async()=>{await window.pmFlush();PM.cur=null;pmDraw();scrollTo({top:0})};
+function pmText(){
+  const r=pmRow();if(!r){toast("추천서를 먼저 여세요");return ""}
+  pmCollect();
+  return [`[승진추천서] 대상: ${r.target_label||"-"} / 추천 직급: ${r.rank_to||"-"}`,"","[상세내용]",r.detail||"-","","[성과]",r.perf||"-","","[역량]",r.ability||"-","","[추천자 의견]",r.opinion||"-"].join("\n");
+}
+$("#pmCopy").onclick=()=>{const t=pmText();if(t)copy(t)};
+$("#pmDel").onclick=async()=>{
+  const r=pmRow();if(!r)return;
+  if(!confirm("이 추천서를 삭제할까요? 되돌릴 수 없습니다."))return;
+  const {error}=await window.myhrSB.from("my_promo_recs").delete().eq("id",r.id);
+  if(error){toast("삭제 실패");return}
+  PM.rows=PM.rows.filter(x=>x.id!==r.id);PM.cur=null;pmDraw();toast("삭제됨");
+};
+$("#pmAdd").onclick=async()=>{
+  const SB=window.myhrSB;if(!SB){toast("로그인 후 사용할 수 있습니다");return}
+  const hasSelf=PM.rows.some(x=>x.target_kind==="self");
+  const {data,error}=await SB.from("my_promo_recs").insert({period:PERIOD,target_kind:hasSelf?"staff":"self",target_label:hasSelf?"":"본인"}).select().single();
+  if(error||!data){toast("추가 실패");return}
+  PM.rows.push(data);pmOpen(data.id);
+};
 /* ---- 화면 단순화: 입력칸 자동 높이, 긴 안내 접기 ---- */
 (function(){
   $$(".hint").forEach(el=>{
