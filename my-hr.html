@@ -229,6 +229,11 @@ details.star summary{cursor:pointer;color:var(--blue);font-weight:600;font-size:
 <div id="evalSec" style="display:none">
   <p class="hint" style="padding:4px 6px 0">점수를 고르면 합계가 자동 계산됩니다. 평가기간 내 업적은 경영실적평가 그룹내 순위로 반영되어 선택 항목이 없습니다. 항목명 일부는 임시 이름입니다.</p>
 
+  <details class="card" id="evGuide" open><summary style="font-weight:700;font-size:15px;cursor:pointer">자기평가 작성 안내</summary>
+    <ul class="ind" style="margin-top:8px"><li>직급 전체의 모든 경력을 종합적으로 검토하여 작성</li>
+    <li>현재 성과를 중심으로 작성하되, 주요 기여사항 및 경험이 이전 소속 부점에서 발휘된 경우 해당 내용도 함께 기재</li></ul>
+    <p class="hint" style="margin:8px 0 0">작성 전 확인: 현재 성과 중심인가 · 이전 부점에서의 주요 기여를 넣었는가 · 직급 전체 경력을 검토했는가</p></details>
+
   <div class="card"><h3>영업·마케팅 <span style="font-weight:400;font-size:12px;color:var(--sub)">(이름 미확인)</span></h3>
     <ul class="ind"><li>부점의 이익창출과 고객만족을 위해 점주환경에 부합하는 영업전략 및 실천 방안을 수립하고 스스로 실천하며 직원들에게 효과적으로 전파하고 독려함</li>
     <li>고객의 니즈에 맞는 상품과 서비스를 제공하는 등 적극적이고 효율적인 마케팅 활동을 전개함</li></ul>
@@ -272,14 +277,19 @@ details.star summary{cursor:pointer;color:var(--blue);font-weight:600;font-size:
     <div id="pmList"></div>
     <button class="mini" id="pmAdd" type="button">+ 추천서 추가</button></div>
   <div id="pmEd" style="display:none">
+    <details class="card" open><summary style="font-weight:700;font-size:15px;cursor:pointer">부점장 의견 작성 안내</summary>
+      <ul class="ind" style="margin-top:8px"><li>자기평가 작성이 완료된 직원 대상으로 부점장 의견 작성</li>
+      <li>작성된 자기평가의 수정(재작성 요청) 가능</li>
+      <li>관리자의 시각에서 대상자의 성과·역량·리더십 등을 200자 이내로 기술</li>
+      <li>부점장이 승진 대상인 경우 부점장 의견은 작성 생략(자기평가만 작성)</li></ul></details>
     <div class="card"><h3>추천서 작성</h3>
       <div class="pmf"><label>구분</label><select id="pmKind"><option value="self">본인</option><option value="staff">직원</option></select></div>
       <div class="pmf"><label>대상 (직원은 이니셜과 직급, 예: ㅈㅁㅇ 대리)</label><input type="text" id="pmLabel"></div>
       <div class="pmf"><label>추천 직급 (예: 4급)</label><input type="text" id="pmRank"></div></div>
-    <div class="card"><h3>상세내용</h3><textarea data-pm="detail" style="min-height:200px"></textarea><div class="cnt"><span></span><span></span></div></div>
-    <div class="card"><h3>성과</h3><textarea data-pm="perf" style="min-height:100px"></textarea><div class="cnt"><span></span><span></span></div></div>
-    <div class="card"><h3>역량</h3><textarea data-pm="ability" style="min-height:100px"></textarea><div class="cnt"><span></span><span></span></div></div>
-    <div class="card"><h3>추천자 의견</h3><textarea data-pm="opinion" style="min-height:140px"></textarea><div class="cnt"><span></span><span></span></div></div>
+    <div class="card"><h3>상세내용 <span style="font-weight:400;font-size:12px;color:var(--sub)">(500자 · 1,000바이트 이내)</span></h3><textarea data-pm="detail" style="min-height:200px"></textarea><div class="cnt"><span></span><span></span></div></div>
+    <div class="card"><h3>성과 <span style="font-weight:400;font-size:12px;color:var(--sub)">(100자 · 200바이트 이내)</span></h3><textarea data-pm="perf" style="min-height:100px"></textarea><div class="cnt"><span></span><span></span></div></div>
+    <div class="card"><h3>역량 <span style="font-weight:400;font-size:12px;color:var(--sub)">(100자 · 200바이트 이내)</span></h3><textarea data-pm="ability" style="min-height:100px"></textarea><div class="cnt"><span></span><span></span></div></div>
+    <div class="card" id="pmOpCard"><h3>부점장 의견 <span style="font-weight:400;font-size:12px;color:var(--sub)">(200자 이내)</span></h3><p class="hint" id="pmOpNote" style="display:none;color:var(--warn)">본인(부점장) 승진 대상이므로 부점장 의견은 작성 생략합니다(자기평가만 작성). 복사 시에도 제외됩니다.</p><textarea data-pm="opinion" style="min-height:140px"></textarea><div class="cnt"><span></span><span></span></div></div>
     <div class="card"><div class="opts"><label><input type="checkbox" id="pmDone"><span>제출 완료</span></label></div>
       <p class="hint" id="pmSt" style="margin:8px 0 0"></p>
       <div class="pmact"><button class="mini" id="pmBack" type="button">목록으로</button><button class="mini" id="pmCopy" type="button">전체 복사</button><button class="mini red" id="pmDel" type="button">삭제</button></div></div>
@@ -570,8 +580,15 @@ function pmOpen(id){
   $("#pmDone").checked=r.status==="제출완료";$("#pmSt").textContent="";
   pmCount();pmDraw();requestAnimationFrame(fitAll);setTimeout(fitAll,250);scrollTo({top:0});
 }
+const PML={detail:[500,1000],perf:[100,200],ability:[100,200],opinion:[200,400]};
 function pmCount(){
-  $$("[data-pm]").forEach(el=>{const n=el.value.length,by=bytes(el.value);el.nextElementSibling.firstElementChild.innerHTML=`<b>${n}자</b> · ${by}바이트`});
+  $$("[data-pm]").forEach(el=>{
+    const k=el.dataset.pm,[mc,mb]=PML[k],n=[...el.value].length,by=bytes(el.value),oc=n>mc,ob=by>mb;
+    el.nextElementSibling.firstElementChild.innerHTML=`<b${oc?' class="over"':''}>${n}/${mc}자</b> · <b${ob?' class="over"':''}>${by}/${mb}바이트</b>${oc||ob?" · 한도 초과":""}`;
+  });
+  const self=$("#pmKind").value==="self";
+  $("#pmOpNote").style.display=self?"":"none";
+  $("#pmOpCard").querySelector("textarea").style.opacity=self?".45":"1";
 }
 function pmCollect(){
   const r=pmRow();if(!r)return;
@@ -596,7 +613,7 @@ $("#pmBack").onclick=async()=>{await window.pmFlush();PM.cur=null;pmDraw();scrol
 function pmText(){
   const r=pmRow();if(!r){toast("추천서를 먼저 여세요");return ""}
   pmCollect();
-  return [`[승진추천서] 대상: ${r.target_label||"-"} / 추천 직급: ${r.rank_to||"-"}`,"","[상세내용]",r.detail||"-","","[성과]",r.perf||"-","","[역량]",r.ability||"-","","[추천자 의견]",r.opinion||"-"].join("\n");
+  return [`[승진추천서] 대상: ${r.target_label||"-"} / 추천 직급: ${r.rank_to||"-"}`,"","[상세내용]",r.detail||"-","","[성과]",r.perf||"-","","[역량]",r.ability||"-"].concat(r.target_kind==="self"?[]:["","[부점장 의견]",r.opinion||"-"]).join("\n");
 }
 $("#pmCopy").onclick=()=>{const t=pmText();if(t)copy(t)};
 $("#pmDel").onclick=async()=>{
