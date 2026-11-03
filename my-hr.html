@@ -386,7 +386,7 @@ if(S.step==null)S.step=0;
 if(!S.sub)S.sub={report:false,eval:false};
 (function(){
   const out=[];const ny=new Date().getFullYear()+1;
-  for(let y=2026;y<=ny;y++)["상반기","하반기"].forEach(x=>{if(!(y===2026&&x==="상반기"))out.push(y+"-"+x)});
+  for(let y=2024;y<=ny;y++)["상반기","하반기"].forEach(x=>{if(!(y===2024&&x==="상반기"))out.push(y+"-"+x)});
   if(!out.includes(PERIOD))out.push(PERIOD);
   const sel=document.getElementById("period");
   sel.innerHTML=out.map(p=>`<option value="${p}"${p===PERIOD?" selected":""}>${p.replace("-"," ")}</option>`).join("");
